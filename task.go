@@ -10,6 +10,7 @@ package task
 
 import (
 	"context"
+	"errors"
 	"time"
 )
 
@@ -84,10 +85,19 @@ func (t Helper) HandleErr(f func(error) error) Helper {
 	})
 }
 
-// IgnoreErr ignores the error returned by t.Run. Context errors are unmodified.
+// IgnoreErr ignores the error returned by t.Run if it is not context error.
+//
+// Context error means [context.Canceled] and [context.DeadlineExceeded].
 func (t Helper) IgnoreErr() Helper {
 	return F(func(ctx context.Context) error {
-		t.Run(ctx)
-		return ctx.Err()
+		err := t.Run(ctx)
+		if errors.Is(err, context.Canceled) {
+			return err
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			return err
+		}
+
+		return nil
 	})
 }
