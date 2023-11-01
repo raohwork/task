@@ -6,6 +6,7 @@ package task
 
 import (
 	"context"
+	"errors"
 	"time"
 )
 
@@ -37,4 +38,29 @@ func FromServer(start func() error, stop func()) Helper {
 
 		return start()
 	}).Helper()
+}
+
+// ForRange creates a task that iterates ch and feeds the value to f.
+//
+// It's much like cancellable version of following code:
+//
+//	for v := range ch {
+//		if err := f(ctx, v); err != nil {
+//			return err
+//		}
+//	}
+//
+// Closing ch leads to panic.
+func ForRange[T any](ch <-chan T, f func(context.Context, T) error) Helper {
+	return F(func(ctx context.Context) (err error) {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case v, ok := <-ch:
+			if !ok {
+				panic(errors.New("channel is closed"))
+			}
+			return f(ctx, v)
+		}
+	}).Loop()
 }
