@@ -10,7 +10,7 @@ import (
 	"fmt"
 )
 
-func ExampleHelper_RetryN() {
+func ExampleTask_RetryN() {
 	ctx := context.Background()
 	n := 1
 	errTask := func(_ context.Context) error {
@@ -19,7 +19,7 @@ func ExampleHelper_RetryN() {
 		return errors.New("")
 	}
 
-	retry := F(errTask).RetryN(2)
+	retry := Task(errTask).RetryN(2)
 	retry.Run(ctx)
 
 	// output: 1

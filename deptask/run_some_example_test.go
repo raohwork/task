@@ -14,7 +14,7 @@ import (
 func ExampleRunner_RunSomeSync() {
 	r := New()
 	body := func(n string) task.Task {
-		return task.Func(func(_ context.Context) error {
+		return task.Task(func(_ context.Context) error {
 			fmt.Println(n)
 			return nil
 		})

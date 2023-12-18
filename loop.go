@@ -10,28 +10,28 @@ import (
 
 // Loop creates a task that repeatedly runs t with same context until it returns an
 // error.
-func (t Helper) Loop() Helper {
-	return Func(func(ctx context.Context) (err error) {
+func (t Task) Loop() Task {
+	return func(ctx context.Context) (err error) {
 		for {
 			err = t.Run(ctx)
 			if err != nil {
 				return
 			}
 		}
-	}).Helper()
+	}
 }
 
 // Retry creates a task thats repeatedly runs t with same context until it returns
 // nil.
-func (t Helper) Retry() Helper {
-	return Func(func(ctx context.Context) (err error) {
+func (t Task) Retry() Task {
+	return func(ctx context.Context) (err error) {
 		for {
 			err = t.Run(ctx)
 			if err == nil {
 				return
 			}
 		}
-	}).Helper()
+	}
 }
 
 // RetryN is like Retry, but retries no more than n times.
@@ -41,12 +41,12 @@ func (t Helper) Retry() Helper {
 //   - first try
 //   - first retry
 //   - second retry
-func (t Helper) RetryN(n int) Helper {
+func (t Task) RetryN(n int) Task {
 	if n < 0 {
 		n = 0
 	}
 	n++
-	return Func(func(ctx context.Context) (err error) {
+	return func(ctx context.Context) (err error) {
 		for i := 0; i < n; i++ {
 			err = t.Run(ctx)
 			if err == nil {
@@ -54,5 +54,5 @@ func (t Helper) RetryN(n int) Helper {
 			}
 		}
 		return
-	}).Helper()
+	}
 }

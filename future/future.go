@@ -18,13 +18,6 @@ func New[T any]() (fut *Future[T], res func(T), rej func(error)) {
 
 // Future represents a value will be resolved or rejected some time in future.
 // The term "resolve" indicates the value is computed successfully.
-//
-// Future implements [task.Task] so it's easier to wait for multiple futures.
-//
-//	err = task.Skip(future1, future2, future3).Run(ctx)
-//	if err != nil {
-//		// one or more futures are rejected
-//	}
 type Future[T any] struct {
 	l      sync.Mutex
 	ch     atomic.Value
@@ -85,18 +78,14 @@ func (f *Future[T]) Get() T { <-f.Done(); return f.data }
 // Err waits the value and retrieves the error.
 func (f *Future[T]) Err() error { <-f.Done(); return f.err }
 
-// Run waits the value to be resolved or rejected. It also implements [task.Task].
-func (f *Future[T]) Run(ctx context.Context) error {
+// Await is a helper which waits the value and retrieves it along with the error.
+func (f *Future[T]) Await(ctx context.Context) (t T, err error) {
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		err = ctx.Err()
+		return
 	case <-f.Done():
-		return f.Err()
+		return f.data, f.err
 	}
-}
 
-// Await is a helper which waits the value and retrieves it along with the error.
-func (f *Future[T]) Await(ctx context.Context) (T, error) {
-	f.Run(ctx)
-	return f.data, f.err
 }

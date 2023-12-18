@@ -10,7 +10,7 @@ import (
 )
 
 // HTTPServer wraps s into a task so it can shutdown gracefully when canceled.
-func HTTPServer(s *http.Server, shutdown ...CtxMod) Helper {
+func HTTPServer(s *http.Server, shutdown ...CtxMod) Task {
 	return FromServer(
 		s.ListenAndServe,
 		func() {

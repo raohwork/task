@@ -13,7 +13,7 @@ import (
 	"github.com/raohwork/task"
 )
 
-var nop = task.F(func(_ context.Context) error { return nil })
+var nop = task.Task(func(_ context.Context) error { return nil })
 
 func checkArr(a, b []string) bool {
 	if len(a) != len(b) {
@@ -155,7 +155,7 @@ type orderHelper struct {
 }
 
 func (h *orderHelper) body(s string) task.Task {
-	return task.Func(func(_ context.Context) error {
+	return task.Task(func(_ context.Context) error {
 		h.lock.Lock()
 		defer h.lock.Unlock()
 		h.output = append(h.output, s)

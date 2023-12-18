@@ -6,24 +6,35 @@ package task
 
 import (
 	"context"
-	"errors"
 	"time"
 )
 
-// Sleep is a cancellable [time.Sleep].
-func Sleep(ctx context.Context, timeout time.Duration) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(timeout):
-		return nil
+// Tiny wraps a non-cancellable function into task.
+func Tiny(f func() error) Task {
+	return func(_ context.Context) error { return f() }
+}
+
+// Micro wraps a never-fail, non-cancellable function into task.
+func Micro(f func()) Task {
+	return func(_ context.Context) error { f(); return nil }
+}
+
+// Sleep is a cancellable [time.Sleep] in task form.
+func Sleep(timeout time.Duration) Task {
+	return func(ctx context.Context) error {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(timeout):
+			return nil
+		}
 	}
 }
 
-// FromServer creates a task from server, which can be started or stopped. Running
+// FromServer creates a task from something can be started or stopped. Running
 // the task calls start, and cancelling context calls stop.
-func FromServer(start func() error, stop func()) Helper {
-	return Func(func(ctx context.Context) error {
+func FromServer(start func() error, stop func()) Task {
+	return func(ctx context.Context) error {
 		done := make(chan struct{})
 		defer close(done)
 		go func() {
@@ -37,30 +48,5 @@ func FromServer(start func() error, stop func()) Helper {
 		}()
 
 		return start()
-	}).Helper()
-}
-
-// ForRange creates a task that iterates ch and feeds the value to f.
-//
-// It's much like cancellable version of following code:
-//
-//	for v := range ch {
-//		if err := f(ctx, v); err != nil {
-//			return err
-//		}
-//	}
-//
-// Closing ch leads to panic.
-func ForRange[T any](ch <-chan T, f func(context.Context, T) error) Helper {
-	return F(func(ctx context.Context) (err error) {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case v, ok := <-ch:
-			if !ok {
-				panic(errors.New("channel is closed"))
-			}
-			return f(ctx, v)
-		}
-	}).Loop()
+	}
 }
