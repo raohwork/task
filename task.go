@@ -2,10 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-// Package task provides some helper to work with simple routine.
-//
-// Functions and methods which requires a task accepts raw [Task] type for best
-// compatibility. Those create task returns [Helper] instead so it's easier to use.
+// Package task provides some helper to work with common routines so that it can be
+// cancellable or repeatable.
 package task
 
 import (
@@ -29,6 +27,8 @@ func (t Task) Run(ctx context.Context) error {
 }
 
 // Go runs t in separated goroutine and returns a channel to retrieve error.
+//
+// It's safe to ignore the channel if you don't need the result.
 func (t Task) Go(ctx context.Context) <-chan error {
 	ret := make(chan error, 1)
 	t.GoWithChan(ctx, ret)
