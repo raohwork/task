@@ -18,6 +18,11 @@ import (
 // Task repeasents a (maybe) cancellable routine.
 type Task func(context.Context) error
 
+// Exec runs the task with empty context ([context.Background]).
+func (t Task) Exec() error {
+	return t(context.Background())
+}
+
 // Run runs the task, equals to t(ctx).
 func (t Task) Run(ctx context.Context) error {
 	return t(ctx)
