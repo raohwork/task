@@ -10,6 +10,8 @@ import "context"
 // generates a value without error.
 //
 // For generators created using [Chain], you should take extra care.
+//
+// Retrying [Micro] generator is resource-wasting as it never fail.
 func (g Generator[T]) Retry() Generator[T] {
 	return func(ctx context.Context) (T, error) {
 		for {
@@ -30,6 +32,8 @@ func (g Generator[T]) Retry() Generator[T] {
 //   - second retry
 //
 // For generators created using [Chain], you should take extra care.
+//
+// Retrying [Micro] generator is resource-wasting as it never fail.
 func (g Generator[T]) RetryN(n int) Generator[T] {
 	if n < 0 {
 		n = 0

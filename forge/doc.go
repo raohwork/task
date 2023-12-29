@@ -4,4 +4,7 @@
 
 // Package forge defines [Generator], a (maybe) cancellable funtion that generates
 // one value on each run.
+//
+// Like in task package, [Tiny] means the underlying function does not receives a
+// context, and [Micro] is never-fail [Tiny].
 package forge
