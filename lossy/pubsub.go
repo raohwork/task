@@ -6,47 +6,77 @@ package lossy
 
 import "github.com/raohwork/task/future"
 
-type pubsub[T any] struct {
+type pubsubData[T any] struct {
 	*future.Future[T]
 	res func(T)
+	rej func(error)
 }
 
-// PubSub provides a lossy publish/subscribe implementation.
+// NewPubSub creates a new pair of [Pub]/[Sub].
 //
-// It always holds an unresolved [future.Future], which is resolved (or rejected) by
-// publishing, for subscripting. After the Future is resolved, you lost further
-// publishing before subcribes again.
+// It provides a lossy publish/subscribe implementation.
 //
+// They shares an unresolved [future.Future], which is resolved (or rejected) by
+// publishing. After the future is resolved, you lost further publishing before
+// subcribe again.
+func NewPubSub[T any]() (Pub[T], Sub[T]) {
+	x := (&pubsub[T]{make(chan *pubsubData[T], 1)}).addElement()
+	return x, x
+}
+
+// Pub is a [future.Future] based lossy publisher.
+//
+// Take a look at [Sub.Sub] for detailed info.
+type Pub[T any] interface {
+	// Publishs v to current subscribers.
+	V(v T)
+	// Publish an error to current subscribers.
+	E(e error)
+}
+
+// Sub is a [future.Future] based lossy subscriber.
+//
+// It receives only one value once you called Sub().
+type Sub[T any] interface {
+	// Subscribes single value. Returned future is resolved by next Pub.V or
+	// rejected by Pub.E. You'll lose further values before you subscribe again.
+	Sub() *future.Future[T]
+}
+
 // Zero value is not usable, use [NewPubSub] to create one.
-type PubSub[T any] struct {
-	ch chan *pubsub[T]
+type pubsub[T any] struct {
+	ch chan *pubsubData[T]
 }
 
-// NewPubSub creates a new PubSub.
-func NewPubSub[T any]() *PubSub[T] {
-	return (&PubSub[T]{make(chan *pubsub[T], 1)}).addElement()
-}
-
-func (p *PubSub[T]) addElement() *PubSub[T] {
-	fut, res, _ := future.New[T]()
-	p.ch <- &pubsub[T]{fut, res}
+func (p *pubsub[T]) addElement() *pubsub[T] {
+	fut, res, rej := future.New[T]()
+	p.ch <- &pubsubData[T]{fut, res, rej}
 	return p
 }
 
-// Pub publishes v by resolving current [future.Future].
+// V publishes v by resolving current [future.Future].
 //
 // It also creates a new Future for later use.
-func (p *PubSub[T]) Pub(v T) {
+func (p *pubsub[T]) V(v T) {
 	el := <-p.ch
 	el.res(v)
 	p.addElement()
 }
 
+// E publishes e by rejecting current [future.Future].
+//
+// It also creates a new Future for later use.
+func (p *pubsub[T]) E(e error) {
+	el := <-p.ch
+	el.rej(e)
+	p.addElement()
+}
+
 // Sub subscribes by retrieving current [future.Future].
 //
-// The Future will be resolved (or rejected) by next Pub. After that, further
-// publishing will lost before you subscribe again.
-func (p *PubSub[T]) Sub() *future.Future[T] {
+// The Future will be resolved (or rejected) by next [Pub.V] (or [Pub.E]). After
+// that, further publishing will lost before you subscribe again.
+func (p *pubsub[T]) Sub() *future.Future[T] {
 	el := <-p.ch
 	p.ch <- el
 	return el.Future
