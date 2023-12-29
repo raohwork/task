@@ -26,3 +26,21 @@ func Copy(dst io.Writer, src io.ReadCloser) Task {
 		return
 	}
 }
+
+// Copy wraps [io.CopyBuffer] into a cancellable task. Cancelling context will close src.
+func CopyBuffer(dst io.Writer, src io.ReadCloser, buf []byte) Task {
+	return func(ctx context.Context) (err error) {
+		done := make(chan struct{})
+		go func() {
+			select {
+			case <-ctx.Done():
+				src.Close()
+			case <-done:
+			}
+		}()
+
+		defer func() { close(done) }()
+		_, err = io.CopyBuffer(dst, src, buf)
+		return
+	}
+}
