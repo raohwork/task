@@ -54,7 +54,7 @@ func (t Task) With(modder CtxMod) Task {
 }
 
 // HandleErr creates a task that handles specific error after running t.
-// It will change the error returned by Run. f is called only if t.Run returns an
+// It could change the error returned by Run. f is called only if t.Run returns an
 // error.
 func (t Task) HandleErr(f func(error) error) Task {
 	return func(ctx context.Context) error {
@@ -67,7 +67,7 @@ func (t Task) HandleErr(f func(error) error) Task {
 	}
 }
 
-// HandleErrWithContext is like HandleErr, but uses same context in f.
+// HandleErrWithContext is like HandleErr, but uses same context used in f.
 func (t Task) HandleErrWithContext(f func(context.Context, error) error) Task {
 	return func(ctx context.Context) error {
 		err := t.Run(ctx)
@@ -83,14 +83,49 @@ func (t Task) HandleErrWithContext(f func(context.Context, error) error) Task {
 //
 // Context error means [context.Canceled] and [context.DeadlineExceeded].
 func (t Task) IgnoreErr() Task {
-	return t.HandleErr(func(err error) error {
-		if errors.Is(err, context.Canceled) {
-			return err
+	return t.OnlyErrs(context.Canceled, context.DeadlineExceeded)
+}
+
+// IgnoreErrs creates a function to be used in [Task.IgnoreErrs] that ignores
+// specific errors.
+//
+// Errors are compared using [errors.Is].
+func IgnoreErrs(errorList ...error) func(error) error {
+	return func(err error) error {
+		for _, e := range errorList {
+			if errors.Is(err, e) {
+				return nil
+			}
 		}
-		if errors.Is(err, context.DeadlineExceeded) {
-			return err
+
+		return err
+	}
+}
+
+// IgnoreErrs ignores specific error.
+func (t Task) IgnoreErrs(errorList ...error) Task {
+	return t.HandleErr(IgnoreErrs(errorList...))
+}
+
+// OnlyErrs creates a function to be used in [Task.OnlyErrs] that ignores all
+// errors excepts specified in errorList.
+//
+// Errors are compared using [errors.Is].
+func OnlyErrs(errorList ...error) func(error) error {
+	return func(err error) error {
+		for _, e := range errorList {
+			if errors.Is(err, e) {
+				return err
+			}
 		}
 
 		return nil
-	})
+	}
+}
+
+// OnlyErrs preserves only specific error.
+func (t Task) OnlyErrs(errorList ...error) Task {
+	return t.HandleErr(OnlyErrs(errorList...))
+}
+
 }
