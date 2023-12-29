@@ -37,8 +37,8 @@ func (t Task) GoWithChan(ctx context.Context, ch chan<- error) {
 // CtxMod defines how you modify a context.
 type CtxMod func(context.Context) (context.Context, func())
 
-// WithTimeout creates a CtxMod which adds timeout info to a context.
-func WithTimeout(dur time.Duration) CtxMod {
+// Timeout creates a CtxMod which adds timeout info to a context.
+func Timeout(dur time.Duration) CtxMod {
 	return func(ctx context.Context) (context.Context, func()) {
 		return context.WithTimeout(ctx, dur)
 	}
