@@ -11,6 +11,11 @@ import (
 	"strings"
 )
 
+// Fixed creates a micro generator that always return same value.
+func Fixed[T any](v T) Generator[T] {
+	return Micro(func() T { return v })
+}
+
 // StringReader creates a micro generator which generates reader from same string.
 func StringReader(str string) Generator[io.Reader] {
 	return Micro(func() io.Reader { return strings.NewReader(str) })
