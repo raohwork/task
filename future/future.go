@@ -11,13 +11,23 @@ import (
 )
 
 // New creates a future fut, which can be resolved by res or rejected by rej.
+//
+// Created future will only have at most one non-empty value. If it is resolved by
+// res, fut.Err() will be nil; fut.Get() returns empty value if rejected.
 func New[T any]() (fut *Future[T], res func(T), rej func(error)) {
 	ret := &Future[T]{}
 	return ret, ret.resolve, ret.reject
 }
 
-// Future represents a value will be resolved or rejected some time in future.
-// The term "resolve" indicates the value is computed successfully.
+// Create creates a future fut, which can be resolved by determine.
+//
+// Created future might have both the value and the error with non-empty value.
+func Create[T any]() (fut *Future[T], determine func(T, error)) {
+	ret := &Future[T]{}
+	return ret, ret.determine
+}
+
+// Future represents a value which is determined some time in future.
 type Future[T any] struct {
 	l      sync.Mutex
 	ch     atomic.Value
@@ -49,24 +59,24 @@ func (f *Future[T]) done() chan struct{} {
 	return done
 }
 
-func (f *Future[T]) resolve(v T) {
+func (f *Future[T]) determine(v T, e error) {
 	f.l.Lock()
 	if !f.closed {
 		f.data = v
+		f.err = e
 		close(f.prepareDone(true))
 		f.closed = true
 	}
 	f.l.Unlock()
 }
 
+func (f *Future[T]) resolve(v T) {
+	f.determine(v, nil)
+}
+
 func (f *Future[T]) reject(e error) {
-	f.l.Lock()
-	if !f.closed {
-		f.err = e
-		close(f.prepareDone(true))
-		f.closed = true
-	}
-	f.l.Unlock()
+	var v T
+	f.determine(v, e)
 }
 
 // Done returns a channel which is closed when value is determined.
