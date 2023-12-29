@@ -21,6 +21,8 @@ func Iter(tasks ...Task) Task {
 
 // First creates a task that runs tasks concurrently, return first result and cancel
 // others.
+//
+// Take care of [Tiny] tasks as it cannot be cancelled by context.
 func First(tasks ...Task) Task {
 	return func(ctx context.Context) (err error) {
 		ctx, cancel := context.WithCancel(ctx)
@@ -64,6 +66,8 @@ func Wait(tasks ...Task) Task {
 
 // Skip creates a task that runs tasks concurrently, cancel others if any error, and
 // wait them done.
+//
+// Take care of [Tiny] tasks as it cannot be cancelled by context.
 func Skip(tasks ...Task) Task {
 	return func(ctx context.Context) (err error) {
 		ctx, cancel := context.WithCancel(ctx)

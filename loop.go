@@ -23,6 +23,8 @@ func (t Task) Loop() Task {
 
 // Retry creates a task thats repeatedly runs t with same context until it returns
 // nil.
+//
+// Retrying [Micro] task is resource-wasting as it never fail.
 func (t Task) Retry() Task {
 	return func(ctx context.Context) (err error) {
 		for {
@@ -41,6 +43,8 @@ func (t Task) Retry() Task {
 //   - first try
 //   - first retry
 //   - second retry
+//
+// Retrying [Micro] task is resource-wasting as it never fail.
 func (t Task) RetryN(n int) Task {
 	if n < 0 {
 		n = 0

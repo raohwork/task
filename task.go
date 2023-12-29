@@ -4,6 +4,9 @@
 
 // Package task provides some helper to work with common routines so that it can be
 // cancellable or repeatable.
+//
+// In this and derived packages (like forge), the term "Tiny" indicates the source
+// function does not receives a context, and "Micro" is a never-fail "Tiny".
 package task
 
 import (
