@@ -11,12 +11,27 @@ import (
 
 // Tiny wraps a non-cancellable function into task.
 func Tiny(f func() error) Task {
-	return func(_ context.Context) error { return f() }
+	return func(ctx context.Context) error {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			return f()
+		}
+	}
 }
 
 // Micro wraps a never-fail, non-cancellable function into task.
 func Micro(f func()) Task {
-	return func(_ context.Context) error { f(); return nil }
+	return func(ctx context.Context) error {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			f()
+			return nil
+		}
+	}
 }
 
 // Sleep is a cancellable [time.Sleep] in task form.
