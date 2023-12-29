@@ -76,7 +76,7 @@ type Runner interface {
 	// It will call Runner.Validate (and returns error if any) before actually
 	// coping tasks.
 	CopyTo(dst smolRunner, name ...string) error
-	// Run validates dependencies and runs all tasks synchronously.
+	// RunSync validates dependencies and runs all tasks synchronously.
 	//
 	// The order is unspecified, only dependencies are ensured.
 	RunSync(ctx context.Context) error

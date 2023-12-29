@@ -10,8 +10,8 @@ import (
 )
 
 // Copy wraps [io.Copy] into a cancellable task. Cancelling context will close src.
-func Copy(dst io.Writer, src io.ReadCloser) Helper {
-	return Func(func(ctx context.Context) (err error) {
+func Copy(dst io.Writer, src io.ReadCloser) Task {
+	return func(ctx context.Context) (err error) {
 		done := make(chan struct{})
 		go func() {
 			select {
@@ -24,5 +24,23 @@ func Copy(dst io.Writer, src io.ReadCloser) Helper {
 		defer func() { close(done) }()
 		_, err = io.Copy(dst, src)
 		return
-	}).Helper()
+	}
+}
+
+// Copy wraps [io.CopyBuffer] into a cancellable task. Cancelling context will close src.
+func CopyBuffer(dst io.Writer, src io.ReadCloser, buf []byte) Task {
+	return func(ctx context.Context) (err error) {
+		done := make(chan struct{})
+		go func() {
+			select {
+			case <-ctx.Done():
+				src.Close()
+			case <-done:
+			}
+		}()
+
+		defer func() { close(done) }()
+		_, err = io.CopyBuffer(dst, src, buf)
+		return
+	}
 }

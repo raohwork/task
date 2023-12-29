@@ -18,19 +18,19 @@ import (
 //
 //	r.Run() // executed immediatly
 //	r.Run() // executed after a second
-func New(l *rate.Limiter, t task.Task) (ret task.Helper) {
-	return task.Func(func(ctx context.Context) error {
+func New(l *rate.Limiter, t task.Task) (ret task.Task) {
+	return func(ctx context.Context) error {
 		reserve := l.Reserve()
-		if err := task.Sleep(ctx, reserve.Delay()); err != nil {
+		if err := task.Sleep(reserve.Delay()).Run(ctx); err != nil {
 			reserve.Cancel()
 			return err
 		}
 
 		return t.Run(ctx)
-	}).Helper()
+	}
 }
 
 // Every is a wrapper of New.
-func Every(dur time.Duration, f task.Task) task.Helper {
+func Every(dur time.Duration, f task.Task) task.Task {
 	return New(rate.NewLimiter(rate.Every(dur), 1), f)
 }

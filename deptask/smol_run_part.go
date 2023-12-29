@@ -69,7 +69,7 @@ func (r *smolRunner) RunSome(ctx context.Context, names ...string) (err error) {
 
 	tasks := make([]task.Task, 0, len(nodes))
 	for _, n := range nodes {
-		tasks = append(tasks, n)
+		tasks = append(tasks, n.Run)
 	}
 
 	return task.Skip(tasks...).Run(ctx)

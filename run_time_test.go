@@ -11,10 +11,10 @@ import (
 	"time"
 )
 
-func ExampleHelper_Timed() {
+func ExampleTask_Timed() {
 	ctx := context.Background()
 	begin := time.Now()
-	quickTask := F(func(_ context.Context) error {
+	quickTask := Task(func(_ context.Context) error {
 		// simulates a quick task like computing 1+1
 		fmt.Printf("quick done at +%d socond\n", time.Since(begin)/time.Second)
 		return nil
@@ -23,7 +23,7 @@ func ExampleHelper_Timed() {
 	fmt.Printf("quick returns at +%d second\n", time.Since(begin)/time.Second)
 
 	begin = time.Now()
-	slowTask := F(func(_ context.Context) error {
+	slowTask := Task(func(_ context.Context) error {
 		// simulates a slow task like calling web api
 		time.Sleep(2 * time.Second)
 		fmt.Printf("slow done at +%d socond\n", time.Since(begin)/time.Second)
@@ -38,10 +38,10 @@ func ExampleHelper_Timed() {
 	// slow returns at +2 second
 }
 
-func ExampleHelper_TimedDone() {
+func ExampleTask_TimedDone() {
 	ctx := context.Background()
 	begin := time.Now()
-	doneTask := F(func(_ context.Context) error {
+	doneTask := Task(func(_ context.Context) error {
 		// a task which always success
 		return nil
 	}).TimedDone(time.Second)
@@ -49,7 +49,7 @@ func ExampleHelper_TimedDone() {
 	fmt.Printf("done returns at +%d second\n", time.Since(begin)/time.Second)
 
 	begin = time.Now()
-	failTask := F(func(_ context.Context) error {
+	failTask := Task(func(_ context.Context) error {
 		return errors.New("a task which always fail")
 	}).TimedDone(time.Second)
 	failTask.Run(ctx)

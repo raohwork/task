@@ -14,8 +14,8 @@ import (
 
 func Example() {
 	t := func(_ context.Context) error { return nil }
-	timed := task.Func(t).Helper().Timed(time.Second)
-	rl := Every(time.Second, task.Func(t))
+	timed := task.Task(t).Timed(time.Second)
+	rl := Every(time.Second, task.Task(t))
 	ctx := context.Background()
 
 	begin := time.Now()

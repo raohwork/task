@@ -9,20 +9,20 @@ import (
 	"time"
 )
 
-func (t Helper) timed(dur func(time.Duration) time.Duration, e func(error) bool) Helper {
-	return Func(func(ctx context.Context) error {
+func (t Task) timed(dur func(time.Duration) time.Duration, e func(error) bool) Task {
+	return func(ctx context.Context) error {
 		begin := time.Now()
 		err := t.Run(ctx)
 		wait := dur(time.Since(begin))
 		if wait > 0 && e(err) {
-			er := Sleep(ctx, wait)
+			er := Sleep(wait).Run(ctx)
 			if err == nil {
 				err = er
 			}
 		}
 
 		return err
-	}).Helper()
+	}
 }
 
 func delta(d time.Duration) func(time.Duration) time.Duration {
@@ -36,12 +36,12 @@ func delta(d time.Duration) func(time.Duration) time.Duration {
 //
 // If you're looking for rate limiting solution, you should take a look at "rated"
 // subdirectory.
-func (t Helper) Timed(dur time.Duration) Helper {
+func (t Task) Timed(dur time.Duration) Task {
 	return t.TimedF(delta(dur))
 }
 
 // TimedF is like Timed, but use function instead.
-func (t Helper) TimedF(f func(time.Duration) time.Duration) Helper {
+func (t Task) TimedF(f func(time.Duration) time.Duration) Task {
 	return t.timed(f, func(_ error) bool { return true })
 }
 
@@ -49,12 +49,12 @@ func (t Helper) TimedF(f func(time.Duration) time.Duration) Helper {
 //
 // If you're looking for rate limiting solution, you should take a look at "rated"
 // subdirectory.
-func (t Helper) TimedDone(dur time.Duration) Helper {
+func (t Task) TimedDone(dur time.Duration) Task {
 	return t.TimedDoneF(delta(dur))
 }
 
 // TimedDoneF is like TimedDone, but use function instead.
-func (t Helper) TimedDoneF(f func(time.Duration) time.Duration) Helper {
+func (t Task) TimedDoneF(f func(time.Duration) time.Duration) Task {
 	return t.timed(f, func(e error) bool { return e == nil })
 }
 
@@ -62,11 +62,11 @@ func (t Helper) TimedDoneF(f func(time.Duration) time.Duration) Helper {
 //
 // If you're looking for rate limiting solution, you should take a look at "rated"
 // subdirectory.
-func (t Helper) TimedFail(dur time.Duration) Helper {
+func (t Task) TimedFail(dur time.Duration) Task {
 	return t.TimedFailF(delta(dur))
 }
 
 // TimedFailF is like TimedFail, but use function instead.
-func (t Helper) TimedFailF(f func(time.Duration) time.Duration) Helper {
+func (t Task) TimedFailF(f func(time.Duration) time.Duration) Task {
 	return t.timed(f, func(e error) bool { return e != nil })
 }
