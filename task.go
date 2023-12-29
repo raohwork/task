@@ -11,6 +11,7 @@ package task
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 )
 
@@ -128,4 +129,16 @@ func (t Task) OnlyErrs(errorList ...error) Task {
 	return t.HandleErr(OnlyErrs(errorList...))
 }
 
+var ErrOnce = errors.New("the task can only be executed once.")
+
+// Once creates a task that can be run only for once, further attempt returns ErrOnce.
+func (t Task) Once() Task {
+	var once sync.Once
+	return func(ctx context.Context) (err error) {
+		err = ErrOnce
+		once.Do(func() {
+			err = t(ctx)
+		})
+		return
+	}
 }
