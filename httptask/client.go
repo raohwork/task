@@ -99,6 +99,12 @@ func (r ReqGen) DoWith(cl *http.Client) forge.Generator[*http.Response] {
 }
 
 // NewRequest wraps [http.NewRequestWithContext] into a [ReqGen].
+//
+// You might want to take a look at [forge.StringReader], [forge.BytesReader],
+// [forge.OpenFile] and [forge.FsFile] to save your life.
+//
+// You have to take extra care if you want to share same bodyGen among multiple
+// requests.
 func NewRequest[T io.Reader](method, url string, bodyGen forge.Generator[T]) ReqGen {
 	return func(ctx context.Context) (ret *http.Request, err error) {
 		body, err := bodyGen.Run(ctx)
@@ -108,3 +114,6 @@ func NewRequest[T io.Reader](method, url string, bodyGen forge.Generator[T]) Req
 		return http.NewRequestWithContext(ctx, method, url, body)
 	}
 }
+
+// EmptyBody is a helper to be used in [NewRequest] as empty body.
+func EmptyBody(_ context.Context) (io.Reader, error) { return nil, nil }

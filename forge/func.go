@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"io/fs"
 	"os"
 	"strings"
 	"sync"
@@ -31,6 +32,11 @@ func BytesReader(str []byte) Generator[io.Reader] {
 // OpenFile wraps [os.Open] into a tiny generator.
 func OpenFile(name string) Generator[*os.File] {
 	return Tiny(func() (*os.File, error) { return os.Open(name) })
+}
+
+// FsFile wraps [fs.FS.Open] into a tiny generator.
+func FsFile(f fs.FS, name string) Generator[fs.File] {
+	return Tiny(func() (fs.File, error) { return f.Open(name) })
 }
 
 // Cached wraps g to cache the result, and reuse it in later call without running g.
