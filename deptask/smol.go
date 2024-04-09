@@ -54,7 +54,7 @@ func (r *smolRunner) Skip(name ...string) {
 	}
 }
 
-func (r *smolRunner) CopyTo(dst smolRunner, name ...string) error {
+func (r *smolRunner) CopyTo(dst Runner, name ...string) error {
 	if err := r.Validate(); err != nil {
 		return err
 	}

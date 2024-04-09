@@ -65,7 +65,8 @@ type Runner interface {
 	// Mark some tasks to be skipped. Skipped task will not be executed, just
 	// pretends that it has finished successfully.
 	Skip(name ...string)
-	// CopyTo copies specified tasks and their deps to dst using dst.Add.
+	// CopyTo copies specified tasks and their deps to dst using dst.Add. Useful
+	// when testing.
 	//
 	// Non-exist tasks are ignored silently. Say you have a Runner contains four
 	// tasks: a, b, c (depends b) and d. Calling with a, c, f will add task a,
@@ -75,7 +76,9 @@ type Runner interface {
 	//
 	// It will call Runner.Validate (and returns error if any) before actually
 	// coping tasks.
-	CopyTo(dst smolRunner, name ...string) error
+	//
+	// State is not copied! Use with caution!
+	CopyTo(dst Runner, name ...string) error
 	// RunSync validates dependencies and runs all tasks synchronously.
 	//
 	// The order is unspecified, only dependencies are ensured.
