@@ -6,9 +6,11 @@ package forge
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"strings"
+	"sync"
 )
 
 // Fixed creates a micro generator that always return same value.
@@ -29,4 +31,19 @@ func BytesReader(str []byte) Generator[io.Reader] {
 // OpenFile wraps [os.Open] into a tiny generator.
 func OpenFile(name string) Generator[*os.File] {
 	return Tiny(func() (*os.File, error) { return os.Open(name) })
+}
+
+// Cached wraps g to cache the result, and reuse it in later call without running g.
+func Cached[T any](g Generator[T]) Generator[T] {
+	var (
+		val  T
+		once sync.Once
+		err  error
+	)
+	return func(ctx context.Context) (T, error) {
+		once.Do(func() {
+			val, err = g.Run(ctx)
+		})
+		return val, err
+	}
 }

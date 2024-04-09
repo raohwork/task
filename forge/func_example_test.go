@@ -40,3 +40,40 @@ func ExampleFixed() {
 	// output: 1
 	// context canceled
 }
+
+func ExampleCached() {
+	n := 0
+	g := G(func(_ context.Context) (int, error) {
+		fmt.Print("hey! ")
+		n++
+		return n, nil
+	})
+	ctx := context.Background()
+
+	fmt.Println(g.Run(ctx))
+	fmt.Println(g.Run(ctx))
+	fmt.Println(g.Run(ctx))
+
+	fmt.Println()
+	c := Cached(g)
+	fmt.Println(c.Run(ctx))
+	fmt.Println(c.Run(ctx))
+
+	fmt.Println()
+	fmt.Println(g.Run(ctx))
+
+	fmt.Println()
+	fmt.Println(c.Run(ctx))
+
+	// output:
+	// hey! 1 <nil>
+	// hey! 2 <nil>
+	// hey! 3 <nil>
+	//
+	// hey! 4 <nil>
+	// 4 <nil>
+	//
+	// hey! 5 <nil>
+	//
+	// 4 <nil>
+}
