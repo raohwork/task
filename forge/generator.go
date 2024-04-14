@@ -8,7 +8,7 @@ import (
 	"context"
 
 	"github.com/raohwork/task"
-	"github.com/raohwork/task/future"
+	"github.com/raohwork/task/tbd"
 )
 
 // Tiny wraps a non-cancellable function into generator.
@@ -49,15 +49,20 @@ type Generator[T any] func(context.Context) (T, error)
 // Run runs the Generator.
 func (g Generator[T]) Run(ctx context.Context) (T, error) { return g(ctx) }
 
-// Go runs g in separated goroutine and returns a Future to retrieve result.
-func (g Generator[T]) Go(ctx context.Context) *future.Future[T] {
-	fu, d := future.Create[T]()
+// Tiny transforms g to be a non-cancellable generator.
+func (g Generator[T]) Tiny() (T, error) {
+	return g.Run(context.Background())
+}
+
+// Go runs g in separated goroutine and returns a TBD to retrieve result.
+func (g Generator[T]) Go(ctx context.Context) tbd.TBD[T] {
+	ret, d := tbd.Create[T]()
 	task.Task(func(ctx context.Context) error {
 		v, err := g(ctx)
 		d(v, err)
 		return err
 	}).Go(ctx)
-	return fu
+	return ret
 }
 
 // With creates a Generator that the context is derived using modder before running.

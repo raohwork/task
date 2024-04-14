@@ -8,6 +8,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/raohwork/task/tbd"
 )
 
 func ExampleGenerator_RetryN() {
@@ -42,7 +44,7 @@ func ExampleGenerator_Retry() {
 
 	retry := G(errTask).Retry()
 	fu := retry.Go(ctx)
-	fmt.Printf("result: %d", fu.Get())
+	fmt.Printf("result: %d", tbd.Value(fu))
 
 	// output: 1
 	// 2

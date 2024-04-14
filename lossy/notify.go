@@ -33,8 +33,6 @@ func NewNotifier() (Notifier, Waiter) {
 type Notifier interface {
 	// Notifies current waiting waiters.
 	Notify()
-	// Deprecated: Use Notify() which is identical.
-	N()
 }
 
 // Waiter is a channel-bases lossy waiter, coupled with [Notifier].
@@ -45,8 +43,6 @@ type Waiter interface {
 	// Notifier.Notify call. You'll lose further notifications before
 	// you wait again.
 	Wait() <-chan struct{}
-	// Deprecated: Use Wait() which is identical.
-	W() <-chan struct{}
 
 	// A cancellable wait.
 	WaitCtx(context.Context) error
@@ -65,16 +61,6 @@ func (n *notifier) Wait() <-chan struct{} {
 	n.ch <- ret
 	return ret
 }
-
-// N is identical to Notify.
-//
-// Deprecated: Use Notify() instead.
-func (n *notifier) N() { n.Notify() }
-
-// W is identical to Wait.
-//
-// Deprecated: Use Wait() instead.
-func (n *notifier) W() <-chan struct{} { return n.Wait() }
 
 // WaitCtx waits current channel until ctx is canceled.
 func (n *notifier) WaitCtx(ctx context.Context) error {
