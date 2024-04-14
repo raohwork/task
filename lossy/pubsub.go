@@ -4,12 +4,14 @@
 
 package lossy
 
-import "github.com/raohwork/task/future"
+import (
+	"github.com/raohwork/task/tbd"
+)
 
 type pubsubData[T any] struct {
-	*future.Future[T]
-	res func(T)
-	rej func(error)
+	tbd.TBD[T]
+	res func(T) error
+	rej func(error) error
 }
 
 // NewPubSub creates a new pair of [Pub]/[Sub].
@@ -40,7 +42,7 @@ type Pub[T any] interface {
 type Sub[T any] interface {
 	// Subscribes single value. Returned future is resolved by next Pub.V or
 	// rejected by Pub.E. You'll lose further values before you subscribe again.
-	Sub() *future.Future[T]
+	Sub() tbd.TBD[T]
 }
 
 // Zero value is not usable, use [NewPubSub] to create one.
@@ -49,7 +51,7 @@ type pubsub[T any] struct {
 }
 
 func (p *pubsub[T]) addElement() *pubsub[T] {
-	fut, res, rej := future.New[T]()
+	fut, res, rej := tbd.New[T]()
 	p.ch <- &pubsubData[T]{fut, res, rej}
 	return p
 }
@@ -76,8 +78,8 @@ func (p *pubsub[T]) E(e error) {
 //
 // The Future will be resolved (or rejected) by next [Pub.V] (or [Pub.E]). After
 // that, further publishing will lost before you subscribe again.
-func (p *pubsub[T]) Sub() *future.Future[T] {
+func (p *pubsub[T]) Sub() tbd.TBD[T] {
 	el := <-p.ch
 	p.ch <- el
-	return el.Future
+	return el.TBD
 }
