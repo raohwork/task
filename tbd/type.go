@@ -9,6 +9,8 @@ import (
 	"sync"
 )
 
+var nopCtx = context.Background()
+
 // TBD represents a value might be computed some time later.
 //
 // It is a placeholder for the value. There must be a resolver who give it the

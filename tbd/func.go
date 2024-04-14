@@ -17,3 +17,15 @@ func Reject[T any](e error) TBD[T] {
 	rej(e)
 	return ret
 }
+
+// Value waits and gets the value from t.
+func Value[T any](t TBD[T]) T {
+	v, _ := t.Get(nopCtx)
+	return v
+}
+
+// Value waits and gets the error from t.
+func Err[T any](t TBD[T]) error {
+	_, e := t.Get(nopCtx)
+	return e
+}
