@@ -25,60 +25,26 @@ type TBD[T any] interface {
 
 // New creates a TBD and provides 2 functions to resolve it.
 func New[T any]() (TBD[T], func(T) error, func(error) error) {
-	ret := newbase[T]()
-	return ret, ret.resolve, ret.reject
+	var once sync.Once
+	ret := CreateImpl[T]()
+	return ret,
+		func(v T) error {
+			once.Do(func() { ret.Resolve(v) })
+			return nil
+		},
+		func(e error) error {
+			once.Do(func() { ret.Reject(e) })
+			return e
+		}
 }
 
 // Create creates a TBD and provides a function to resolve it.
 func Create[T any]() (TBD[T], func(T, error) error) {
-	ret := newbase[T]()
-	return ret, ret.determine
-}
-
-func newbase[T any]() *_basetbd[T] {
-	return &_basetbd[T]{ch: make(chan struct{})}
-}
-
-type _basetbd[T any] struct {
-	once sync.Once
-	ch   chan struct{}
-	data T
-	err  error
-}
-
-func (f *_basetbd[T]) determine(v T, e error) error {
-	f.once.Do(func() {
-		f.data = v
-		f.err = e
-		close(f.ch)
-	})
-	return e
-}
-
-func (f *_basetbd[T]) resolve(v T) error {
-	f.once.Do(func() {
-		f.data = v
-		close(f.ch)
-	})
-	return nil
-}
-
-func (f *_basetbd[T]) reject(e error) error {
-	f.once.Do(func() {
-		f.err = e
-		close(f.ch)
-	})
-	return e
-}
-
-func (f *_basetbd[T]) Resolved() <-chan struct{} { return f.ch }
-func (f *_basetbd[T]) Get(ctx context.Context) (t T, err error) {
-	select {
-	case <-ctx.Done():
-		err = ctx.Err()
-		return
-	case <-f.Resolved():
-		return f.data, f.err
-	}
-
+	var once sync.Once
+	ret := CreateImpl[T]()
+	return ret,
+		func(v T, e error) error {
+			once.Do(func() { ret.Determine(v, e) })
+			return e
+		}
 }

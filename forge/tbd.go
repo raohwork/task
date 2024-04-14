@@ -14,30 +14,26 @@ import (
 type _bindTBD[T any] struct {
 	g    Generator[T]
 	once sync.Once
-	ch   chan struct{}
-	data T
-	err  error
+	*tbd.GeneralImpl[T]
 }
 
-func (b *_bindTBD[T]) Resolved() <-chan struct{} { return b.ch }
 func (b *_bindTBD[T]) Get(ctx context.Context) (T, error) {
 	b.once.Do(func() {
-		b.data, b.err = b.g.Run(ctx)
-		close(b.ch)
+		b.GeneralImpl.Determine(b.g.Run(ctx))
 	})
-	return b.data, b.err
+	return b.GeneralImpl.Get(ctx)
 }
 
 // TBD creates a binded [tbd.TBD] that resolved by g.
 //
-// It's optimized for performance and semantically identical to following code:
+// It's semantically identical to following code, with bettor performance:
 //
 //	ret, resolve := tbd.Create[T]()
 //	return tbd.Bind(ret, func(ctx context.Context) error {
 //		return resolve(g.Run(ctx))
 //	}
 func (g Generator[T]) TBD() tbd.TBD[T] {
-	return &_bindTBD[T]{g: g, ch: make(chan struct{})}
+	return &_bindTBD[T]{g: g, GeneralImpl: tbd.CreateImpl[T]()}
 }
 
 // Cached wraps g to cache the result, and reuse it in later call without running g.
