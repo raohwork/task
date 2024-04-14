@@ -39,6 +39,24 @@ func EzConvert[S, D any](s TBD[S], f func(S) D) TBD[D] {
 // Convert creates a TBD that will be resolved by converting src to new value.
 //
 // Returned TBD will be resolved when you get the value after src is resolved.
+//
+// # Improtant Note
+//
+// In general, chainning TBD (like [Convert]) is a bad idea: Returned TBD is
+// double-locked: it self is locked and the src is also locked. The performance and
+// memory usage is much more than using forge.Chain. You may write following code
+// instead to get better performance:
+//
+//	forge.Convert(src.Get, f).TBD()
+//
+// If f is simple and fast, you could use pure Generator:
+//
+//	forge.Convert(src.Get, f)
+//
+// ONLY USE THIS IF f IS SIMPLE AND FAST, because code above calls f every time
+// you get value from returned Generator. To fix this, use cached generator:
+//
+//	forge.Cache(forge.Convert(src.Get, f))
 func Convert[S, D any](src TBD[S], f func(S) (D, error)) TBD[D] {
 	ret, res, rej := New[D]()
 	return Bind(ret, func(ctx context.Context) error {

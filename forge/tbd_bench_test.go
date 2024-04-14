@@ -38,3 +38,63 @@ func BenchmarkTBDGeneraotr(b *testing.B) {
 		_, _ = g.TBD().Get(nopCtx)
 	}
 }
+
+func BenchmarkTBDCachedGenerator(b *testing.B) {
+	g := G(func(_ context.Context) (int, error) {
+		return 1, nil
+	})
+
+	for i := 0; i < b.N; i++ {
+		_, _ = Cached(g).Run(nopCtx)
+	}
+}
+
+func BenchmarkConvertTBD(b *testing.B) {
+	x := tbd.Resolve(1)
+	for i := 0; i < b.N; i++ {
+		f := tbd.Convert(x, func(i int) (float64, error) { return float64(i), nil })
+		f.Get(nopCtx)
+	}
+}
+
+func BenchmarkConvertTBDAsG(b *testing.B) {
+	x := tbd.Resolve(1)
+	for i := 0; i < b.N; i++ {
+		g := G(x.Get)
+		f := Chain(g, func(_ context.Context, i int) (float64, error) {
+			return float64(i), nil
+		}).TBD()
+		f.Get(nopCtx)
+	}
+}
+
+func BenchmarkConvertGeneratorToTBD(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		g := Micro(func() int { return 1 })
+		f := Chain(g, func(_ context.Context, i int) (float64, error) {
+			return float64(i), nil
+		}).TBD()
+		f.Get(nopCtx)
+	}
+}
+
+func BenchmarkConvertGenerator(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		g := Micro(func() int { return 1 })
+		f := Cached(Chain(g, func(_ context.Context, i int) (float64, error) {
+			return float64(i), nil
+		}))
+		f.Run(nopCtx)
+	}
+}
+
+func BenchmarkConvertTBDToG(b *testing.B) {
+	x := tbd.Resolve(1)
+	for i := 0; i < b.N; i++ {
+		g := G(x.Get)
+		f := Cached(Chain(g, func(_ context.Context, i int) (float64, error) {
+			return float64(i), nil
+		}))
+		f.Run(nopCtx)
+	}
+}

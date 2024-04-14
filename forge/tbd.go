@@ -38,5 +38,15 @@ func (g Generator[T]) TBD() tbd.TBD[T] {
 
 // Cached wraps g to cache the result, and reuse it in later call without running g.
 func Cached[T any](g Generator[T]) Generator[T] {
-	return g.TBD().Get
+	var (
+		once sync.Once
+		data T
+		err  error
+	)
+	return func(ctx context.Context) (T, error) {
+		once.Do(func() {
+			data, err = g.Run(ctx)
+		})
+		return data, err
+	}
 }
