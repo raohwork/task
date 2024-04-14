@@ -8,8 +8,10 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/raohwork/task/forge"
+	"github.com/raohwork/task/tbd"
 )
 
 // ReqGen is a [forge.Generator] which generates HTTP request.
@@ -39,6 +41,16 @@ func (r ReqGen) AddHeader(k, v string) ReqGen {
 	})
 }
 
+// ContentType is a shortcut so set Content-Type header.
+func (r ReqGen) ContentType(typ string) ReqGen {
+	return r.SetHeader("Content-Type", typ)
+}
+
+// URLEncoded is a shortcut so set Content-Type header.
+func (r ReqGen) URLEncoded() ReqGen {
+	return r.ContentType("application/x-www-form-urlencoded")
+}
+
 // Customize use a function to customize the generated request.
 func (r ReqGen) Customize(f func(*http.Request) (*http.Request, error)) ReqGen {
 	return func(ctx context.Context) (ret *http.Request, err error) {
@@ -50,6 +62,65 @@ func (r ReqGen) Customize(f func(*http.Request) (*http.Request, error)) ReqGen {
 		if f != nil {
 			ret, err = f(ret)
 		}
+		return
+	}
+}
+
+// Location sets request url from string.
+func (r ReqGen) Location(locGen tbd.TBD[string]) ReqGen {
+	return r.URL(tbd.Convert(locGen, url.Parse))
+}
+
+// URL sets request url.
+func (r ReqGen) URL(urlGen tbd.TBD[*url.URL]) ReqGen {
+	return func(ctx context.Context) (ret *http.Request, err error) {
+		ret, err = r(ctx)
+		if err != nil {
+			return
+		}
+
+		u, err := urlGen.Get(ctx)
+		if err != nil {
+			return
+		}
+		ret.URL = u
+		return
+	}
+}
+
+// Body sets the request body to request.
+func (r ReqGen) Body(bodyGen tbd.TBD[io.ReadCloser]) ReqGen {
+	return func(ctx context.Context) (req *http.Request, err error) {
+		req, err = r(ctx)
+		if err != nil {
+			return
+		}
+
+		body, err := bodyGen.Get(ctx)
+		if err != nil {
+			return
+		}
+
+		req.Body = body
+		return
+	}
+}
+
+// GetBody sets the request body and [http.Request.GetBody] to request.
+func (r ReqGen) GetBody(bodyGen forge.Generator[io.ReadCloser]) ReqGen {
+	return func(ctx context.Context) (req *http.Request, err error) {
+		req, err = r(ctx)
+		if err != nil {
+			return
+		}
+
+		body, err := bodyGen(ctx)
+		if err != nil {
+			return
+		}
+
+		req.Body = body
+		req.GetBody = bodyGen.Tiny
 		return
 	}
 }
@@ -100,20 +171,12 @@ func (r ReqGen) DoWith(cl *http.Client) forge.Generator[*http.Response] {
 
 // NewRequest wraps [http.NewRequestWithContext] into a [ReqGen].
 //
-// You might want to take a look at [forge.StringReader], [forge.BytesReader],
-// [forge.OpenFile] and [forge.FsFile] to save your life.
-//
-// You have to take extra care if you want to share same bodyGen among multiple
-// requests.
-func NewRequest[T io.Reader](method, url string, bodyGen forge.Generator[T]) ReqGen {
+// It generates a request with empty body by default, use [ReqGen.Body] or
+// [ReqGen.GetBody] to set a body. You might want to take a look at
+// [forge.StringReader], [forge.BytesReader], [forge.OpenFile] and [forge.FsFile]
+// to save your life.
+func NewRequest[T io.Reader](method, url string) ReqGen {
 	return func(ctx context.Context) (ret *http.Request, err error) {
-		body, err := bodyGen.Run(ctx)
-		if err != nil {
-			return
-		}
-		return http.NewRequestWithContext(ctx, method, url, body)
+		return http.NewRequestWithContext(ctx, method, url, nil)
 	}
 }
-
-// EmptyBody is a helper to be used in [NewRequest] as empty body.
-func EmptyBody(_ context.Context) (io.Reader, error) { return nil, nil }
