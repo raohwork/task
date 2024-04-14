@@ -29,6 +29,10 @@ func (t Task) Run(ctx context.Context) error {
 	return t(ctx)
 }
 
+func (t Task) Tiny() error {
+	return t(context.Background())
+}
+
 // Go runs t in separated goroutine and returns a channel to retrieve error.
 //
 // It's safe to ignore the channel if you don't need the result.

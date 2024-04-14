@@ -49,6 +49,11 @@ type Generator[T any] func(context.Context) (T, error)
 // Run runs the Generator.
 func (g Generator[T]) Run(ctx context.Context) (T, error) { return g(ctx) }
 
+// Tiny transforms g to be a non-cancellable generator.
+func (g Generator[T]) Tiny() (T, error) {
+	return g.Run(context.Background())
+}
+
 // Go runs g in separated goroutine and returns a TBD to retrieve result.
 func (g Generator[T]) Go(ctx context.Context) tbd.TBD[T] {
 	ret, d := tbd.Create[T]()
