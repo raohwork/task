@@ -145,16 +145,8 @@ func (r ReqGen) Update(f func(*http.Request) *http.Request) ReqGen {
 
 // Do is shortcut to DoWith(nil)
 //
-// You might want to use it in most case, since timeout info can be set without
-// changing http client (using context). Following code set a 3 seconds timeout to
-// request, send it to server, wait a second and retry for once if failed.
-//
-//	body := `{"a":1}`
-//	resp, err := NewRequest(method, url, forge.StringReader(body)).SetHeader(
-//		"Content-Type", "application/json",
-//	).Do().With(
-//		task.Timeout(3*time.Second),
-//	).TimedFail(time.Second).RetryN(1).Run(ctx)
+// Timeout info can be set without changing http client (using context). But when to
+// set timeout info is critical. Take a look at following two examples.
 func (r ReqGen) Do() forge.Generator[*http.Response] {
 	return r.DoWith(nil)
 }
@@ -165,6 +157,8 @@ func (r ReqGen) Do() forge.Generator[*http.Response] {
 //
 // Like idiom of http package, pass nil to cl will use [http.DefaultClient], or you
 // might use [ReqGen.Do] for lesser key strokes.
+//
+// Take a look at [ReqGen.Do] for more detailed explaination and common gotcha.
 func (r ReqGen) DoWith(cl *http.Client) forge.Generator[*http.Response] {
 	if cl == nil {
 		cl = http.DefaultClient
