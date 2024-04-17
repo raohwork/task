@@ -56,6 +56,25 @@ func ExampleReqGen_Do_incorrect() {
 	done := newServer().Go(globalCtx)
 	time.Sleep(10 * time.Millisecond)
 
+	// this is identical to
+	//
+	//     func a(ctx context.Context) (*http.Response, error) {
+	//         ctx, cancel := context.WithTimeout(time.Minute)
+	//         defer cancel()
+	//         req, err := http.NewRequestWithContext(
+	//             ctx,
+	//             http.MethodGet,
+	//             "http://127.0.0.1:9487/slow",
+	//             nil,
+	//         )
+	//         if err != nil {
+	//             return nil, err
+	//         }
+	//         return http.DefaultClient.Do(req)
+	//     }
+	//     resp, err := a(globalCtx)
+	//
+	// Context is canceled before you actually read the body.
 	resp, err := NewRequest(
 		http.MethodGet, "http://127.0.0.1:9487/slow",
 	).Do().With(task.Timeout(time.Minute)).Run(globalCtx)
@@ -66,8 +85,6 @@ func ExampleReqGen_Do_incorrect() {
 	defer resp.Body.Close()
 	// simulates some processing work or network latency
 	time.Sleep(200 * time.Millisecond)
-	// The timeout info above covers only request sending and response header
-	// retrieving, so context is canceled now.
 
 	// now read body after context is canceled, causing error
 	_, err = io.ReadAll(resp.Body)
@@ -96,14 +113,33 @@ func ExampleReqGen_Do_correct() {
 		return io.ReadAll(r.Body)
 	}
 
-	req := NewRequest(
-		http.MethodGet, "http://127.0.0.1:9487/slow",
-	).Do()
-
-	// The timeout info covers full transportation of data, including request
-	// sending, http header and body retrieving.
+	// It is identical to
+	//
+	//     func a(ctx context.Context) ([]byte, error) {
+	//         ctx, cancel := context.WithTimeout(time.Minute)
+	//         defer cancel()
+	//         req, err := http.NewRequestWithContext(
+	//             ctx,
+	//             http.MethodGet,
+	//             "http://127.0.0.1:9487/slow",
+	//             nil,
+	//         )
+	//         if err != nil {
+	//             return nil, err
+	//         }
+	//         resp, err := http.DefaultClient.Do(req)
+	//         if err != nil {
+	//             return nil, err
+	//         }
+	//         defer resp.Body.Close()
+	//         return io.ReadAll(resp.Body)
+	//     }
+	//     buf, err := a(globalCtx)
+	//
+	// Context is canceled after body is consumed.
 	buf, err := forge.Convert(
-		req, extractBody,
+		NewRequest(http.MethodGet, "http://127.0.0.1:9487/slow").Do(),
+		extractBody,
 	).With(task.Timeout(time.Minute)).Run(globalCtx)
 	if err != nil {
 		fmt.Println("unexpected error:", err)
@@ -111,8 +147,6 @@ func ExampleReqGen_Do_correct() {
 	}
 	// simulates some processing work or network latency
 	time.Sleep(200 * time.Millisecond)
-	// The timeout info above covers full transportation of data, including
-	// request sending, response header and body retrieving.
 
 	fmt.Println(err)
 	fmt.Println(len(buf))
