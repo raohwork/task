@@ -186,7 +186,7 @@ func (r ReqGen) DoWith(cl *http.Client) forge.Generator[*http.Response] {
 // [ReqGen.GetBody] to set a body. You might want to take a look at
 // [forge.StringReader], [forge.BytesReader], [forge.OpenFile] and [forge.FsFile]
 // to save your life.
-func NewRequest[T io.Reader](method, url string) ReqGen {
+func NewRequest(method, url string) ReqGen {
 	return func(ctx context.Context) (ret *http.Request, err error) {
 		return http.NewRequestWithContext(ctx, method, url, nil)
 	}
