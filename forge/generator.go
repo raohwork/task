@@ -105,6 +105,33 @@ func (g Generator[T]) OnlyErrs(errorList ...error) Generator[T] {
 	return g.HandleErr(task.OnlyErrs(errorList...))
 }
 
+// Defer wraps g to run f after it.
+func (g Generator[T]) Defer(f func()) Generator[T] {
+	return func(ctx context.Context) (ret T, err error) {
+		ret, err = g(ctx)
+		f()
+		return
+	}
+}
+
+// Pre wraps g to run f before it.
+func (g Generator[T]) Pre(f func()) Generator[T] {
+	return func(ctx context.Context) (ret T, err error) {
+		f()
+		ret, err = g(ctx)
+		return
+	}
+}
+
+// Post wraps g to run f after it.
+func (g Generator[T]) Post(f func(T, error)) Generator[T] {
+	return func(ctx context.Context) (ret T, err error) {
+		ret, err = g(ctx)
+		f(ret, err)
+		return
+	}
+}
+
 // Chain creates a new Generator that generates value from input using f.
 //
 // Returned generator might use different context with input:

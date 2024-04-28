@@ -29,8 +29,14 @@ func (t Task) Run(ctx context.Context) error {
 	return t(ctx)
 }
 
+// Tiny converts the task into a simple function by feeding empty context when run.
 func (t Task) Tiny() error {
 	return t(context.Background())
+}
+
+// Micro converts the task into a simple function by feeding empty context when run.
+func (t Task) Micro() func() {
+	return func() { t(context.Background()) }
 }
 
 // Go runs t in separated goroutine and returns a channel to retrieve error.
@@ -151,6 +157,33 @@ func (t Task) Once() Task {
 		once.Do(func() {
 			err = t(ctx)
 		})
+		return
+	}
+}
+
+// Defer wraps t to run f before it.
+func (t Task) Defer(f func()) Task {
+	return func(ctx context.Context) (err error) {
+		err = t(ctx)
+		f()
+		return err
+	}
+}
+
+// Pre wraps t to run f before it.
+func (t Task) Pre(f func()) Task {
+	return func(ctx context.Context) (err error) {
+		f()
+		err = t(ctx)
+		return
+	}
+}
+
+// Post wraps t to run f after it.
+func (t Task) Post(f func(error)) Task {
+	return func(ctx context.Context) (err error) {
+		err = t(ctx)
+		f(err)
 		return
 	}
 }
