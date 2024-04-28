@@ -4,73 +4,61 @@
 
 package deptask
 
-func (r *smolRunner) Validate() error {
-	if r.checked {
-		return r.lastCheck
-	}
-	r.checked = true
+func (r *Runner) validate() error {
+	r.init()
 
-	if err := r.checkMissing(); err != nil {
-		r.lastCheck = err
-		return err
+	if len(r.deps) == 0 {
+		return nil
 	}
 
-	r.lastCheck = r.checkCyclic()
-	return r.lastCheck
-}
+	degs := map[string]int{}
 
-func (r *smolRunner) checkMissing() error {
-	for t := range r.tasks {
-		for _, d := range r.deps[t] {
-			if _, ok := r.tasks[d]; !ok {
-				return ErrMissing(d)
+	// compute degree and check if missing
+	for name, deps := range r.deps {
+		if _, ok := degs[name]; !ok {
+			degs[name] = 0
+		}
+		for _, dep := range deps {
+			if _, ok := r.deps[dep]; !ok {
+				return ErrMissing(dep)
 			}
+			degs[dep]++
 		}
 	}
-	return nil
-}
 
-func (r *smolRunner) checkCyclic() error {
-	indeg := r.inDeg()
-	arr := r.removeLeaf(indeg)
-	for len(arr) > 0 && len(indeg) > 0 {
-		arr = r.removeLeaf(indeg)
+	// check cyclic deps and make cache
+	arr := r.removeLeaf(degs)
+	r.groups = nil
+	if len(arr) > 0 {
+		r.groups = append(r.groups, arr)
+	}
+	for len(arr) > 0 && len(degs) > 0 {
+		arr = r.removeLeaf(degs)
+		if len(arr) > 0 {
+			r.groups = append(r.groups, arr)
+		}
 	}
 
-	if len(indeg) > 0 {
+	if len(degs) > 0 {
 		return ErrCyclic
 	}
 
 	return nil
 }
 
-func (r *smolRunner) inDeg() map[string]int {
-	ret := map[string]int{}
-	for n, deps := range r.deps {
-		if _, ok := ret[n]; !ok {
-			ret[n] = 0
-		}
-
-		for _, dep := range deps {
-			ret[dep]++
-		}
-	}
-	return ret
-}
-
-func (r *smolRunner) removeLeaf(deg map[string]int) (ret []string) {
-	for name, d := range deg {
-		if d == 0 {
+func (r *Runner) removeLeaf(degs map[string]int) (ret []string) {
+	for name, deg := range degs {
+		if deg == 0 {
 			ret = append(ret, name)
 		}
 	}
 
-	for _, n := range ret {
-		delete(deg, n)
-		for _, dep := range r.deps[n] {
-			deg[dep]--
+	for _, name := range ret {
+		delete(degs, name)
+		for _, dep := range r.deps[name] {
+			degs[dep]--
 		}
 	}
 
-	return
+	return ret
 }

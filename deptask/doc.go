@@ -4,4 +4,7 @@
 
 // Package deptask provides a tool, [Runner], to run tasks in order according to its
 // dependency.
+//
+// [Runner] is designed to handle complex initializing process of large project. All
+// method that executes the tasks follows fail-fast principle.
 package deptask
