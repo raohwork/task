@@ -86,7 +86,7 @@ func (e ErrOthers) As(v interface{}) bool { return errors.As(e.cause, v) }
 //
 // Tasks canceled by this receieves ErrOthers which wraps the error as cancel cause.
 //
-// Take care of [Tiny] tasks as it cannot be cancelled by context.
+// Take care of [Tiny] and [Micro] tasks as it cannot be cancelled by context.
 func Skip(tasks ...Task) Task {
 	return func(ctx context.Context) (err error) {
 		ctx, cancel := context.WithCancelCause(ctx)
