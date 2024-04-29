@@ -31,15 +31,32 @@ func delta(d time.Duration) func(time.Duration) time.Duration {
 	return func(dur time.Duration) time.Duration { return d - dur }
 }
 
-// TimedFail creates a Generator and ensures the run time is longer than dur if it failed.
-//
-// It focuses on "How long I should wait before returning". Take a look at example
-// for how it works.
+// TimedFail is like [task.TimedFail], but applies to Generator.
 func (g Generator[T]) TimedFail(dur time.Duration) Generator[T] {
 	return g.TimedFailF(delta(dur))
 }
 
-// TimedFailF is like TimedFail, but use function instead.
+// TimedFailF is like [task.TimedFailF], but applies to Generator.
 func (g Generator[T]) TimedFailF(f func(time.Duration) time.Duration) Generator[T] {
 	return g.timed(f, func(e error) bool { return e != nil })
+}
+
+// TimedDone is like [task.TimedDone], but applies to Generator.
+func (g Generator[T]) TimedDone(dur time.Duration) Generator[T] {
+	return g.TimedDoneF(delta(dur))
+}
+
+// TimedDoneF is like [task.TimedDoneF], but applies to Generator.
+func (g Generator[T]) TimedDoneF(f func(time.Duration) time.Duration) Generator[T] {
+	return g.timed(f, func(e error) bool { return e == nil })
+}
+
+// Timed is like [task.Timed], but applies to Generator.
+func (g Generator[T]) Timed(dur time.Duration) Generator[T] {
+	return g.TimedF(delta(dur))
+}
+
+// TimedF is like [task.TimedF], but applies to Generator.
+func (g Generator[T]) TimedF(f func(time.Duration) time.Duration) Generator[T] {
+	return g.timed(f, func(e error) bool { return true })
 }
