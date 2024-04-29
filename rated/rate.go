@@ -16,7 +16,7 @@ import (
 //
 // Say you have an empty task r with rate limit to once per second:
 //
-//	r.Run() // executed immediatly
+//	r.Run() // executed immediately
 //	r.Run() // executed after a second
 func New(l *rate.Limiter, t task.Task) (ret task.Task) {
 	return func(ctx context.Context) error {

@@ -17,7 +17,7 @@ import (
 //
 // Say you have an fixed generator r with rate limit to once per second:
 //
-//	r.Run() // executed immediatly
+//	r.Run() // executed immediately
 //	r.Run() // executed after a second
 func NewG[T any](l *rate.Limiter, g forge.Generator[T]) forge.Generator[T] {
 	return func(ctx context.Context) (ret T, err error) {

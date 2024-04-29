@@ -158,7 +158,7 @@ func (r ReqGen) Do() forge.Generator[*http.Response] {
 // Like idiom of http package, pass nil to cl will use [http.DefaultClient], or you
 // might use [ReqGen.Do] for lesser key strokes.
 //
-// Take a look at [ReqGen.Do] for more detailed explaination and common gotcha.
+// Take a look at [ReqGen.Do] for more detailed explanation and common gotcha.
 func (r ReqGen) DoWith(cl *http.Client) forge.Generator[*http.Response] {
 	if cl == nil {
 		cl = http.DefaultClient

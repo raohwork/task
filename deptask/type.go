@@ -124,7 +124,7 @@ func WithHook(pre func(string), post func(string, bool, error)) *Runner {
 
 // Runner manages task dependencies and runs the tasks.
 //
-// Runner is not thread-safe, you MUST NOT share same instance amoung multiple
+// Runner is not thread-safe, you MUST NOT share same instance among multiple
 // goroutines.
 //
 // Runner remembers whether a task is executed or not. Take a look at examples for

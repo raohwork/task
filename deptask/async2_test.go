@@ -44,7 +44,7 @@ func (r *Runner) runSomeAsync3(names ...string) task.Task {
 	return task.Iter(tasks...)
 }
 
-// This is here to test if using lock is better thn channel.
+// This is here to test if using lock is better than channel.
 //
 // Using lock is not Go idiom since we're passing "state" to another goroutine,
 // exactly what channel designed for. But I've found some articles explaining why

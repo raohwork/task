@@ -7,7 +7,7 @@
 // A rated task focus on "How long I should wait before I can run again". You might
 // want to take a look at package example to compare it with [task.Task.Timed].
 //
-// It is putted in seperated package so you won't link to unused external
+// It is putted in separated package so you won't link to unused external
 // dependencies if you're not using it.
 //
 // It's quite common to write following code:

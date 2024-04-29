@@ -147,7 +147,7 @@ func (r *Runner) RunSomeSync(ctx context.Context, names ...string) error {
 
 // RunSome validates dependencies and runs some tasks (and deps) concurrently.
 //
-// When an error occured, other tasks are canceled, prevents further execution.
+// When an error occurred, other tasks are canceled, prevents further execution.
 func (r *Runner) RunSome(ctx context.Context, names ...string) error {
 	if err := r.Validate(); err != nil {
 		return err
