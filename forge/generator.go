@@ -50,8 +50,13 @@ type Generator[T any] func(context.Context) (T, error)
 func (g Generator[T]) Run(ctx context.Context) (T, error) { return g(ctx) }
 
 // Tiny transforms g to be a non-cancellable generator.
-func (g Generator[T]) Tiny() (T, error) {
-	return g.Run(context.Background())
+func (g Generator[T]) Tiny() func() (T, error) {
+	return func() (T, error) { return g(context.TODO()) }
+}
+
+// Tiny transforms g to be a non-cancellable, never-fail generator.
+func (g Generator[T]) Micro() func() T {
+	return func() T { v, _ := g(context.TODO()); return v }
 }
 
 // Go runs g in separated goroutine and returns a TBD to retrieve result.

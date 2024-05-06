@@ -30,8 +30,8 @@ func (t Task) Run(ctx context.Context) error {
 }
 
 // Tiny converts the task into a simple function by feeding empty context when run.
-func (t Task) Tiny() error {
-	return t(context.Background())
+func (t Task) Tiny() func() error {
+	return func() error { return t(context.Background()) }
 }
 
 // Micro converts the task into a simple function by feeding empty context when run.
