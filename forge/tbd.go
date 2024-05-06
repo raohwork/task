@@ -8,6 +8,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/raohwork/task"
 	"github.com/raohwork/task/tbd"
 )
 
@@ -39,8 +40,21 @@ func (t *asTBD[T]) Get(ctx context.Context) (T, error) {
 	return t.data, t.err
 }
 
+// Once wraps g to enforce it to run at most once. Further execution returns [task.ErrOnce].
+func (g Generator[T]) Once() Generator[T] {
+	var once sync.Once
+	return func(ctx context.Context) (T, error) {
+		var data T
+		err := task.ErrOnce
+		once.Do(func() {
+			data, err = g.Run(ctx)
+		})
+		return data, err
+	}
+}
+
 // Cached wraps g to cache the result, and reuse it in later call without running g.
-func Cached[T any](g Generator[T]) Generator[T] {
+func (g Generator[T]) Cached() Generator[T] {
 	var (
 		once sync.Once
 		data T
@@ -51,5 +65,36 @@ func Cached[T any](g Generator[T]) Generator[T] {
 			data, err = g.Run(ctx)
 		})
 		return data, err
+	}
+}
+
+// Saved wraps g to save the result only if successed, and reuse it in later call without running g again.
+func (g Generator[T]) Saved() Generator[T] {
+	lock := &sync.Mutex{}
+	ch := make(chan T, 1)
+	return func(ctx context.Context) (T, error) {
+		// short path
+		select {
+		case v := <-ch:
+			ch <- v
+			return v, nil
+		default:
+		}
+
+		// slow path
+		lock.Lock()
+		defer lock.Unlock()
+		select {
+		case v := <-ch:
+			ch <- v
+			return v, nil
+		default:
+		}
+
+		v, err := g(ctx)
+		if err == nil {
+			ch <- v
+		}
+		return v, err
 	}
 }
