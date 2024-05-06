@@ -149,7 +149,7 @@ func (t Task) OnlyErrs(errorList ...error) Task {
 
 var ErrOnce = errors.New("the task can only be executed once.")
 
-// Once creates a task that can be run only for once, further attempt returns ErrOnce.
+// Once creates a task that can be run only once, further attempt returns ErrOnce.
 func (t Task) Once() Task {
 	var once sync.Once
 	return func(ctx context.Context) (err error) {
@@ -158,6 +158,20 @@ func (t Task) Once() Task {
 			err = t(ctx)
 		})
 		return
+	}
+}
+
+// Cached wraps t to cache the result, and reuse it in later call.
+func (t Task) Cached() Task {
+	var (
+		once sync.Once
+		err  error
+	)
+	return func(ctx context.Context) error {
+		once.Do(func() {
+			err = t(ctx)
+		})
+		return err
 	}
 }
 
