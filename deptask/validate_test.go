@@ -13,8 +13,8 @@ import (
 
 func TestCyclicOf2(t *testing.T) {
 	r := New()
-	r.MustAdd("a", task.Micro(func() {}), "b")
-	r.MustAdd("b", task.Micro(func() {}), "a")
+	r.MustAdd("a", task.NoErr(func() {}), "b")
+	r.MustAdd("b", task.NoErr(func() {}), "a")
 	if err := r.Validate(); err != ErrCyclic {
 		t.Fatal("unexpected result:", err)
 	}
@@ -22,10 +22,10 @@ func TestCyclicOf2(t *testing.T) {
 
 func TestCyclicOf3(t *testing.T) {
 	r := New()
-	r.MustAdd("a", task.Micro(func() {}), "b")
-	r.MustAdd("b", task.Micro(func() {}), "c")
-	r.MustAdd("c", task.Micro(func() {}), "d")
-	r.MustAdd("d", task.Micro(func() {}), "b")
+	r.MustAdd("a", task.NoErr(func() {}), "b")
+	r.MustAdd("b", task.NoErr(func() {}), "c")
+	r.MustAdd("c", task.NoErr(func() {}), "d")
+	r.MustAdd("d", task.NoErr(func() {}), "b")
 	if err := r.Validate(); err != ErrCyclic {
 		t.Fatal("unexpected result:", err)
 	}
@@ -33,7 +33,7 @@ func TestCyclicOf3(t *testing.T) {
 
 func TestMissing(t *testing.T) {
 	r := New()
-	r.MustAdd("a", task.Micro(func() {}), "b")
+	r.MustAdd("a", task.NoErr(func() {}), "b")
 	err := r.Validate()
 	var m ErrMissing
 	if !errors.As(err, &m) {
@@ -43,14 +43,14 @@ func TestMissing(t *testing.T) {
 
 func BenchmarkValidate(b *testing.B) {
 	r := New()
-	r.MustAdd("a", task.Micro(func() {}), "b", "c", "d")
-	r.MustAdd("b", task.Micro(func() {}), "c", "e")
-	r.MustAdd("c", task.Micro(func() {}))
-	r.MustAdd("d", task.Micro(func() {}))
-	r.MustAdd("e", task.Micro(func() {}), "d")
-	r.MustAdd("f", task.Micro(func() {}), "a", "g")
-	r.MustAdd("g", task.Micro(func() {}), "e")
-	r.MustAdd("z", task.Micro(func() {}))
+	r.MustAdd("a", task.NoErr(func() {}), "b", "c", "d")
+	r.MustAdd("b", task.NoErr(func() {}), "c", "e")
+	r.MustAdd("c", task.NoErr(func() {}))
+	r.MustAdd("d", task.NoErr(func() {}))
+	r.MustAdd("e", task.NoErr(func() {}), "d")
+	r.MustAdd("f", task.NoErr(func() {}), "a", "g")
+	r.MustAdd("g", task.NoErr(func() {}), "e")
+	r.MustAdd("z", task.NoErr(func() {}))
 
 	for i := 0; i < b.N; i++ {
 		r.checked = false

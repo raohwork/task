@@ -29,14 +29,14 @@ func newTool() asyncTestCaseTool {
 	}
 }
 func (c asyncTestCaseTool) add(name string, deps ...string) {
-	c.Runner.Add(name, task.Micro(func() {
+	c.Runner.Add(name, task.NoErr(func() {
 		c.Lock()
 		defer c.Unlock()
 		c.Write([]byte(name + ","))
 	}), deps...)
 }
 func (c asyncTestCaseTool) addErr(name string, err error, deps ...string) {
-	c.Runner.Add(name, task.Tiny(func() error { return err }), deps...)
+	c.Runner.Add(name, task.NoCtx(func() error { return err }), deps...)
 }
 func (c asyncTestCaseTool) dumpRunner(t *testing.T) {
 	t.Log("DUMP DEPENDENCY:")

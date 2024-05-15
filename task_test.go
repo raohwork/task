@@ -11,7 +11,7 @@ import (
 )
 
 func ExampleTask_Once() {
-	t := Tiny(func() error {
+	t := NoCtx(func() error {
 		fmt.Println("executed")
 		return errors.New("error")
 	})
@@ -30,7 +30,7 @@ func ExampleTask_Once() {
 }
 
 func ExampleTask_Cached() {
-	t := Tiny(func() error {
+	t := NoCtx(func() error {
 		fmt.Println("executed")
 		return errors.New("error")
 	})
