@@ -4,9 +4,6 @@
 
 // Package task provides some helper to work with common routines so that it can be
 // cancellable or repeatable.
-//
-// In this and derived packages (like forge), the term "Tiny" indicates the source
-// function does not receives a context, and "Micro" is a never-fail "Tiny".
 package task
 
 import (
@@ -29,13 +26,13 @@ func (t Task) Run(ctx context.Context) error {
 	return t(ctx)
 }
 
-// Tiny converts the task into a simple function by feeding empty context when run.
-func (t Task) Tiny() func() error {
+// NoCtx converts the task into a simple function by feeding empty context when run.
+func (t Task) NoCtx() func() error {
 	return func() error { return t(context.Background()) }
 }
 
-// Micro converts the task into a simple function by feeding empty context when run.
-func (t Task) Micro() func() {
+// NoErr converts the task into a simple function by feeding empty context when run.
+func (t Task) NoErr() func() {
 	return func() { t(context.Background()) }
 }
 
@@ -175,7 +172,7 @@ func (t Task) Cached() Task {
 	}
 }
 
-// Defer wraps t to run f before it.
+// Defer wraps t to run f after it.
 func (t Task) Defer(f func()) Task {
 	return func(ctx context.Context) (err error) {
 		err = t(ctx)

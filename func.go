@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-// Tiny wraps a non-cancellable function into task.
-func Tiny(f func() error) Task {
+// NoCtx wraps a non-cancellable function into task.
+func NoCtx(f func() error) Task {
 	return func(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
@@ -21,8 +21,8 @@ func Tiny(f func() error) Task {
 	}
 }
 
-// Micro wraps a never-fail, non-cancellable function into task.
-func Micro(f func()) Task {
+// NoErr wraps a never-fail, non-cancellable function into task.
+func NoErr(f func()) Task {
 	return func(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
