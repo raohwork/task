@@ -5,13 +5,44 @@
 package lossy
 
 import (
-	"github.com/raohwork/task/tbd"
+	"context"
+	"sync"
 )
 
 type pubsubData[T any] struct {
-	tbd.TBD[T]
-	res func(T) error
-	rej func(error) error
+	once sync.Once
+	v    T
+	err  error
+	done chan struct{}
+}
+
+func newPubsubData[T any]() *pubsubData[T] {
+	return &pubsubData[T]{done: make(chan struct{})}
+}
+
+func (d *pubsubData[T]) Done() <-chan struct{} { return d.done }
+func (d *pubsubData[T]) Wait(ctx context.Context) (ret T, err error) {
+	select {
+	case <-d.done:
+		return d.v, d.err
+	case <-ctx.Done():
+		err = ctx.Err()
+	}
+	return
+}
+
+func (d *pubsubData[T]) res(v T) {
+	d.once.Do(func() {
+		d.v = v
+		close(d.done)
+	})
+}
+
+func (d *pubsubData[T]) rej(err error) {
+	d.once.Do(func() {
+		d.err = err
+		close(d.done)
+	})
 }
 
 // NewPubSub creates a new pair of [Pub]/[Sub].
@@ -42,7 +73,12 @@ type Pub[T any] interface {
 type Sub[T any] interface {
 	// Subscribes single value. Returned future is resolved by next Pub.V or
 	// rejected by Pub.E. You'll lose further values before you subscribe again.
-	Sub() tbd.TBD[T]
+	Sub() Getter[T]
+}
+
+type Getter[T any] interface {
+	Done() <-chan struct{}
+	Wait(context.Context) (T, error)
 }
 
 // Zero value is not usable, use [NewPubSub] to create one.
@@ -51,8 +87,7 @@ type pubsub[T any] struct {
 }
 
 func (p *pubsub[T]) addElement() *pubsub[T] {
-	fut, res, rej := tbd.New[T]()
-	p.ch <- &pubsubData[T]{fut, res, rej}
+	p.ch <- newPubsubData[T]()
 	return p
 }
 
@@ -78,8 +113,8 @@ func (p *pubsub[T]) E(e error) {
 //
 // The Future will be resolved (or rejected) by next [Pub.V] (or [Pub.E]). After
 // that, further publishing will lost before you subscribe again.
-func (p *pubsub[T]) Sub() tbd.TBD[T] {
+func (p *pubsub[T]) Sub() Getter[T] {
 	el := <-p.ch
 	p.ch <- el
-	return el.TBD
+	return el
 }
