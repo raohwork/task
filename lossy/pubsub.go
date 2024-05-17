@@ -5,59 +5,37 @@
 package lossy
 
 import (
-	"context"
-	"sync"
+	"github.com/raohwork/task/action"
 )
 
 type pubsubData[T any] struct {
-	once sync.Once
-	v    T
-	err  error
-	done chan struct{}
+	res func(T)
+	rej func(error)
+	action.Data[T]
 }
 
 func newPubsubData[T any]() *pubsubData[T] {
-	return &pubsubData[T]{done: make(chan struct{})}
-}
-
-func (d *pubsubData[T]) Done() <-chan struct{} { return d.done }
-func (d *pubsubData[T]) Wait(ctx context.Context) (ret T, err error) {
-	select {
-	case <-d.done:
-		return d.v, d.err
-	case <-ctx.Done():
-		err = ctx.Err()
+	data, res, rej := action.TBD[T]()
+	return &pubsubData[T]{
+		res:  res,
+		rej:  rej,
+		Data: data,
 	}
-	return
-}
-
-func (d *pubsubData[T]) res(v T) {
-	d.once.Do(func() {
-		d.v = v
-		close(d.done)
-	})
-}
-
-func (d *pubsubData[T]) rej(err error) {
-	d.once.Do(func() {
-		d.err = err
-		close(d.done)
-	})
 }
 
 // NewPubSub creates a new pair of [Pub]/[Sub].
 //
 // It provides a lossy publish/subscribe implementation.
 //
-// They shares an unresolved [future.Future], which is resolved (or rejected) by
-// publishing. After the future is resolved, you lost further publishing before
-// subcribe again.
+// They shares an unresolved [action.Data], which is resolved (or rejected) by
+// publishing. After the Data is resolved, you lost further publishing before
+// subscribing again.
 func NewPubSub[T any]() (Pub[T], Sub[T]) {
 	x := (&pubsub[T]{make(chan *pubsubData[T], 1)}).addElement()
 	return x, x
 }
 
-// Pub is a [future.Future] based lossy publisher.
+// Pub is a [action.Data] based lossy publisher.
 //
 // Take a look at [Sub.Sub] for detailed info.
 type Pub[T any] interface {
@@ -67,18 +45,13 @@ type Pub[T any] interface {
 	E(e error)
 }
 
-// Sub is a [future.Future] based lossy subscriber.
+// Sub is a [action.Data] based lossy subscriber.
 //
 // It receives only one value once you called Sub().
 type Sub[T any] interface {
-	// Subscribes single value. Returned future is resolved by next Pub.V or
+	// Subscribes single value. Returned Data is resolved by next Pub.V or
 	// rejected by Pub.E. You'll lose further values before you subscribe again.
-	Sub() Getter[T]
-}
-
-type Getter[T any] interface {
-	Done() <-chan struct{}
-	Wait(context.Context) (T, error)
+	Sub() action.Data[T]
 }
 
 // Zero value is not usable, use [NewPubSub] to create one.
@@ -91,30 +64,30 @@ func (p *pubsub[T]) addElement() *pubsub[T] {
 	return p
 }
 
-// V publishes v by resolving current [future.Future].
+// V publishes v by resolving current [action.Data].
 //
-// It also creates a new Future for later use.
+// It also creates a new Data for later use.
 func (p *pubsub[T]) V(v T) {
 	el := <-p.ch
 	el.res(v)
 	p.addElement()
 }
 
-// E publishes e by rejecting current [future.Future].
+// E publishes e by rejecting current [action.Data].
 //
-// It also creates a new Future for later use.
+// It also creates a new Data for later use.
 func (p *pubsub[T]) E(e error) {
 	el := <-p.ch
 	el.rej(e)
 	p.addElement()
 }
 
-// Sub subscribes by retrieving current [future.Future].
+// Sub subscribes by retrieving current [action.Data].
 //
-// The Future will be resolved (or rejected) by next [Pub.V] (or [Pub.E]). After
+// The Data will be resolved (or rejected) by next [Pub.V] (or [Pub.E]). After
 // that, further publishing will lost before you subscribe again.
-func (p *pubsub[T]) Sub() Getter[T] {
+func (p *pubsub[T]) Sub() action.Data[T] {
 	el := <-p.ch
 	p.ch <- el
-	return el
+	return el.Data
 }
