@@ -35,10 +35,12 @@ func (t Task) HandleErrWithContext(f func(context.Context, error) error) Task {
 	}
 }
 
+// ContextError detects if err is [context.Canceled] or [context.DeadlineExceeded].
 func ContextError(err error) bool {
 	return ErrorIs(context.Canceled, context.DeadlineExceeded)(err)
 }
 
+// ErrorIs creates a function to detect if the error is listed.
 func ErrorIs(errs ...error) func(error) bool {
 	return func(err error) bool {
 		for _, e := range errs {
