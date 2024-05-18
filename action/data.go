@@ -112,5 +112,5 @@ func (d Data[T]) Cached() Data[T] {
 	}
 }
 
-// To creates a [task.Task] by doing something with its value.
-func (d Data[T]) To(a Action[T]) task.Task { return a.Use(d) }
+// Do creates a [task.Task] by doing something with its value.
+func (d Data[T]) Do(a Action[T]) task.Task { return a.Use(d) }
