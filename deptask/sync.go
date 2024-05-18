@@ -6,13 +6,18 @@ package deptask
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/raohwork/task"
 )
 
 func (r *Runner) runSomeSync(names ...string) task.Task {
-	names = append(r.ListDeps(names...), names...)
+	if len(names) > 0 {
+		names = append(r.ListDeps(names...), names...)
+	} else {
+		names = r.ListDeps()
+	}
 
 	m := map[string]bool{}
 	for _, name := range names {
@@ -25,16 +30,17 @@ func (r *Runner) runSomeSync(names ...string) task.Task {
 			if !m[name] {
 				continue
 			}
+			name := name
 
 			tasks = append(tasks, func(ctx context.Context) error {
 				// check if any of depepdencies failed
 				for _, dep := range r.deps[name] {
 					if err := r.tasks[dep].err; err != nil {
 						// skip
+						fmt.Println()
 						return err
 					}
 				}
-
 				return r.tasks[name].Task(name, r.pre, r.post)(ctx)
 			})
 		}
