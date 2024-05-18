@@ -18,7 +18,19 @@ import (
 //
 //	r.Run() // executed immediately
 //	r.Run() // executed after a second
+//
+// Deprecated: use [Task] instead.
 func New(l *rate.Limiter, t task.Task) (ret task.Task) {
+	return Task(l, t)
+}
+
+// Task creates a [task.Task] that respects the rate limit.
+//
+// Say you have an empty task r with rate limit to once per second:
+//
+//	r.Run() // executed immediately
+//	r.Run() // executed after a second
+func Task(l *rate.Limiter, t task.Task) task.Task {
 	return func(ctx context.Context) error {
 		reserve := l.Reserve()
 		if err := task.Sleep(reserve.Delay()).Run(ctx); err != nil {
@@ -31,6 +43,8 @@ func New(l *rate.Limiter, t task.Task) (ret task.Task) {
 }
 
 // Every is a wrapper of New.
+//
+// Deprecated: create your own [rate.Limiter] and use [Task] instead.
 func Every(dur time.Duration, f task.Task) task.Task {
-	return New(rate.NewLimiter(rate.Every(dur), 1), f)
+	return Task(rate.NewLimiter(rate.Every(dur), 1), f)
 }
