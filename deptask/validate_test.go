@@ -6,10 +6,30 @@ package deptask
 
 import (
 	"errors"
+	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/raohwork/task"
 )
+
+func TestListDepsSome(t *testing.T) {
+	r := New()
+	f := task.NoErr(func() {})
+	r.MustAdd("a", f, "b", "c")
+	r.MustAdd("b", f)
+	r.MustAdd("c", f)
+	r.MustAdd("d", f)
+
+	ret := r.ListDeps("a")
+	slices.Sort(ret)
+	expect := []string{"b", "c"}
+
+	if !reflect.DeepEqual(ret, expect) {
+		t.Fatal("unexpected result:", ret)
+	}
+
+}
 
 func TestCyclicOf2(t *testing.T) {
 	r := New()
