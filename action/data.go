@@ -13,6 +13,10 @@ import (
 )
 
 // Data is a function which can generate some data.
+//
+// Though it is named "data", it's more like a factory or "promise in JS". It is
+// used to generate value to be used with [Action] or [Converter]. Take a look at
+// their document for more info.
 type Data[T any] func(context.Context) (T, error)
 
 // Use converts f to Data, for type conversion purpose.

@@ -18,5 +18,12 @@
 //		Use(someData).
 //		Run(ctx)
 //
-// This approach eliminates most error processing code in current scope.
+// This approach eliminates most error processing code in current scope. Take a look
+// at package example.
+//
+// # Performance consideration
+//
+// It has small overhead since it wraps plain function. It is recommended to use
+// this package only to codes doing IO operation or something that can be canceled,
+// as the overhead is small enough to be ignored comparing to those operations.
 package action
