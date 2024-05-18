@@ -41,6 +41,8 @@ func (t Task) Timed(dur time.Duration) Task {
 }
 
 // TimedF is like Timed, but use function instead.
+//
+// The function accepts actual execution time, and returns how long it should wait.
 func (t Task) TimedF(f func(time.Duration) time.Duration) Task {
 	return t.timed(f, func(_ error) bool { return true })
 }
@@ -54,6 +56,8 @@ func (t Task) TimedDone(dur time.Duration) Task {
 }
 
 // TimedDoneF is like TimedDone, but use function instead.
+//
+// The function accepts actual execution time, and returns how long it should wait.
 func (t Task) TimedDoneF(f func(time.Duration) time.Duration) Task {
 	return t.timed(f, func(e error) bool { return e == nil })
 }
@@ -67,6 +71,14 @@ func (t Task) TimedFail(dur time.Duration) Task {
 }
 
 // TimedFailF is like TimedFail, but use function instead.
+//
+// The function accepts actual execution time, and returns how long it should wait.
 func (t Task) TimedFailF(f func(time.Duration) time.Duration) Task {
 	return t.timed(f, func(e error) bool { return e != nil })
+}
+
+// FixedDur creats a func to be used in TimedF, TimedDoneF and TimedFailF, which
+// does not take actual execution time into consideration.
+func FixedDur(dur time.Duration) func(time.Duration) time.Duration {
+	return func(_ time.Duration) time.Duration { return dur }
 }
