@@ -15,7 +15,7 @@ type pubsubData[T any] struct {
 }
 
 func newPubsubData[T any]() *pubsubData[T] {
-	data, res, rej := action.TBD[T]()
+	data, res, rej := action.Promise[T]()
 	return &pubsubData[T]{
 		res:  res,
 		rej:  rej,

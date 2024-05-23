@@ -30,8 +30,8 @@ func Future[T any]() (ret Data[T], determine func(T, error)) {
 		}
 }
 
-// TBD is identical to [Future] but provides different type of function.
-func TBD[T any]() (ret Data[T], resolve func(T), reject func(error)) {
+// Promise is identical to [Future] but provides different type of function.
+func Promise[T any]() (ret Data[T], resolve func(T), reject func(error)) {
 	ret, f := Future[T]()
 	return ret,
 		func(v T) { f(v, nil) },
