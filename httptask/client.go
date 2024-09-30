@@ -150,3 +150,11 @@ func GetResp() action.Converter[*http.Request, *http.Response] {
 		return http.DefaultClient.Do(req.WithContext(ctx))
 	}
 }
+
+// ReadBody creates an [action.Converter] to read the body of a response.
+func ReadBody() action.Converter[*http.Response, []byte] {
+	return func(_ context.Context, resp *http.Response) ([]byte, error) {
+		defer resp.Body.Close()
+		return io.ReadAll(resp.Body)
+	}
+}
