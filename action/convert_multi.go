@@ -17,6 +17,11 @@ func NoCtxGet2[A, B, O any](f func(A, B) (O, error)) Converter2[A, B, O] {
 	return func(_ context.Context, a A, b B) (O, error) { return f(a, b) }
 }
 
+// NoErrGet2 is "NoErr" version of Get2.
+func NoErrGet2[A, B, O any](f func(A, B) O) Converter2[A, B, O] {
+	return func(_ context.Context, a A, b B) (O, error) { return f(a, b), nil }
+}
+
 // From creates a Converter by currifying c with a [Data].
 func (c Converter2[A, B, O]) From(a Data[A]) Converter[B, O] {
 	return func(ctx context.Context, vb B) (ret O, err error) {
@@ -49,6 +54,13 @@ func NoCtxGet3[A, B, C, O any](f func(A, B, C) (O, error)) Converter3[A, B, C, O
 	return func(_ context.Context, a A, b B, c C) (O, error) { return f(a, b, c) }
 }
 
+// NoErrGet3 is "NoErr" version of Get3.
+func NoErrGet3[A, B, C, O any](f func(A, B, C) O) Converter3[A, B, C, O] {
+	return func(_ context.Context, a A, b B, c C) (O, error) {
+		return f(a, b, c), nil
+	}
+}
+
 // From creates a Converter2 by currifying c with a [Data].
 func (c Converter3[A, B, C, O]) From(a Data[A]) Converter2[B, C, O] {
 	return func(ctx context.Context, vb B, vc C) (ret O, err error) {
@@ -78,7 +90,16 @@ func Get4[A, B, C, D, O any](f func(context.Context, A, B, C, D) (O, error)) Con
 
 // NoCtxGet4 is "NoCtx" version of Get4.
 func NoCtxGet4[A, B, C, D, O any](f func(A, B, C, D) (O, error)) Converter4[A, B, C, D, O] {
-	return func(_ context.Context, a A, b B, c C, d D) (O, error) { return f(a, b, c, d) }
+	return func(_ context.Context, a A, b B, c C, d D) (O, error) {
+		return f(a, b, c, d)
+	}
+}
+
+// NoErrGet4 is "NoErr" version of Get4.
+func NoErrGet4[A, B, C, D, O any](f func(A, B, C, D) O) Converter4[A, B, C, D, O] {
+	return func(_ context.Context, a A, b B, c C, d D) (O, error) {
+		return f(a, b, c, d), nil
+	}
 }
 
 // From creates a Converter3 by currifying c with a [Data].
