@@ -39,6 +39,19 @@ func NoErrGet[I, O any](f func(I) O) Converter[I, O] {
 	}
 }
 
+// Then creates a new Converter by chaining two converters.
+//
+// Type of next is limited to O -> O by language design.
+func (c Converter[I, O]) Then(next Converter[O, O]) Converter[I, O] {
+	return func(ctx context.Context, i I) (ret O, err error) {
+		ret, err = c(ctx, i)
+		if err != nil {
+			return
+		}
+		return next(ctx, ret)
+	}
+}
+
 // From creates a [Data] of output type by feeding i to the converter.
 func (c Converter[I, O]) From(i Data[I]) Data[O] {
 	return func(ctx context.Context) (ret O, err error) {
@@ -87,5 +100,19 @@ func (c Converter[I, O]) Defer(f func()) Converter[I, O] {
 		ret, err = c(ctx, i)
 		f()
 		return
+	}
+}
+
+// Join creates a new Converter by joining two converters.
+//
+// It's impossible to implement something like Join(i, j, k, ...) because of
+// language design.
+func Join[A, B, C any](i Converter[A, B], j Converter[B, C]) Converter[A, C] {
+	return func(ctx context.Context, a A) (ret C, err error) {
+		b, err := i(ctx, a)
+		if err != nil {
+			return
+		}
+		return j(ctx, b)
 	}
 }

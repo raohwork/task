@@ -9,6 +9,17 @@ import (
 	"errors"
 )
 
+// Next creates a task that runs next after t finished successfully.
+func (t Task) Then(next Task) Task {
+	return func(ctx context.Context) error {
+		if err := t.Run(ctx); err != nil {
+			return err
+		}
+
+		return next.Run(ctx)
+	}
+}
+
 // Iter creates a task run tasks with same context and stops at first error.
 func Iter(tasks ...Task) Task {
 	return func(ctx context.Context) error {
@@ -27,7 +38,7 @@ var ErrOneHasDone = errors.New("another task has been done")
 // First creates a task that runs tasks concurrently, return first result and cancel
 // others. Other tasks receives ErrOneHasDone as cancel cause.
 //
-// Take care of [Tiny] tasks as it cannot be cancelled by context.
+// Take care of [NoCtx] and [NoErr] tasks as it cannot be cancelled by context.
 func First(tasks ...Task) Task {
 	return func(ctx context.Context) (err error) {
 		ctx, cancel := context.WithCancelCause(ctx)
@@ -86,7 +97,7 @@ func (e ErrOthers) As(v interface{}) bool { return errors.As(e.cause, v) }
 //
 // Tasks canceled by this receieves ErrOthers which wraps the error as cancel cause.
 //
-// Take care of [Tiny] and [Micro] tasks as it cannot be cancelled by context.
+// Take care of [NoCtx] and [NoErr] tasks as it cannot be cancelled by context.
 func Skip(tasks ...Task) Task {
 	return func(ctx context.Context) (err error) {
 		ctx, cancel := context.WithCancelCause(ctx)
