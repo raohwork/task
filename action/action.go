@@ -98,6 +98,14 @@ func (a Action[T]) Post(f func(T, error)) Action[T] {
 	}
 }
 
+// AlterError wraps a to convert error before return it.
+func (a Action[T]) AlterError(f func(error) error) Action[T] {
+	return func(ctx context.Context, v T) error {
+		err := a(ctx, v)
+		return f(err)
+	}
+}
+
 // Defer wraps a to run f after it.
 func (a Action[T]) Defer(f func()) Action[T] {
 	return func(ctx context.Context, v T) error {

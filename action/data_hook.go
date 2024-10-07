@@ -25,6 +25,21 @@ func (d Data[T]) Post(f func(T, error)) Data[T] {
 	}
 }
 
+// AlterOutput wraps d to run f on its output.
+func (d Data[T]) AlterOutput(f func(T, error) (T, error)) Data[T] {
+	return func(ctx context.Context) (T, error) {
+		return f(d(ctx))
+	}
+}
+
+// AlterError wraps d to run f on its error.
+func (d Data[T]) AlterError(f func(error) error) Data[T] {
+	return func(ctx context.Context) (T, error) {
+		ret, err := d(ctx)
+		return ret, f(err)
+	}
+}
+
 // Defer wraps d to run f after it.
 func (d Data[T]) Defer(f func()) Data[T] {
 	return func(ctx context.Context) (T, error) {

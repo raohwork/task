@@ -94,6 +94,21 @@ func (c Converter[I, O]) Post(f func(I, O, error)) Converter[I, O] {
 	}
 }
 
+// AlterOutput creates a new Converter by modifying the output with f.
+func (c Converter[I, O]) AlterOutput(f func(O, error) (O, error)) Converter[I, O] {
+	return func(ctx context.Context, i I) (O, error) {
+		return f(c(ctx, i))
+	}
+}
+
+// AlterError creates a new Converter by modifying the error with f.
+func (c Converter[I, O]) AlterError(f func(error) error) Converter[I, O] {
+	return func(ctx context.Context, i I) (O, error) {
+		ret, err := c(ctx, i)
+		return ret, f(err)
+	}
+}
+
 // Defer wraps c to run f after it.
 func (c Converter[I, O]) Defer(f func()) Converter[I, O] {
 	return func(ctx context.Context, i I) (ret O, err error) {

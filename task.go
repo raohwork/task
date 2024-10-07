@@ -123,3 +123,10 @@ func (t Task) Post(f func(error)) Task {
 		return
 	}
 }
+
+// AlterError wraps t to run f to alter the error before returning.
+func (t Task) AlterError(f func(error) error) Task {
+	return func(ctx context.Context) error {
+		return f(t(ctx))
+	}
+}
