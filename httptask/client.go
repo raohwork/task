@@ -14,18 +14,80 @@ import (
 	"github.com/raohwork/task/action"
 )
 
+// Consume creates a function to consume the body of a response.
+//
+// See example in DecodeWith.
+func Consume(body action.Data[io.ReadCloser]) func() {
+	return func() {
+		b, e := body.Get(context.TODO())
+		if e == nil {
+			io.Copy(io.Discard, b)
+			b.Close()
+		}
+	}
+}
+
+// Reader creates an [action.Data] to help type checking.
+//
+// See example in DecodeWith.
+func Reader[T io.Reader](i action.Data[T]) action.Data[io.Reader] {
+	return action.NoCtxGet(func(r T) (io.Reader, error) {
+		return r, nil
+	}).From(i)
+}
+
+// ParseWith creates an [action.Converter] to parse response body.
+func ParseWith[T any](f func([]byte, any) error) action.Converter[[]byte, T] {
+	return action.NoCtxGet(func(b []byte) (ret T, err error) {
+		err = f(b, &ret)
+		return
+	})
+}
+
+// Decoder abstracts some common decoder like json.Decoder.
+type Decoder interface {
+	Decode(any) error
+}
+
+// DecodeWith creates an [action.Converter] to decode response body.
+func DecodeWith[T any, D Decoder](f func(io.Reader) D) action.Converter[io.Reader, T] {
+	return action.NoCtxGet(func(r io.Reader) (ret T, err error) {
+		var dec = f(r)
+		err = dec.Decode(&ret)
+		return
+	})
+}
+
+// BodyGenFrom creates an [action.Converter] to generate request body.
+//
+// f is a function to generate request body from input parameter, like os.Open.
+func BodyGenFrom[P any, T io.Reader](f func(P) (T, error)) action.Converter[P, io.Reader] {
+	return func(_ context.Context, p P) (io.Reader, error) {
+		return f(p)
+	}
+}
+
+// BodyGenBy creates an [action.Data] to generate request body.
+//
+// f is a function to generate request body, typically a custom function.
+func BodyGenBy[T io.Reader](f func() (T, error)) action.Data[io.Reader] {
+	return func(_ context.Context) (io.Reader, error) {
+		return f()
+	}
+}
+
 // Req creates an [action.Converter] to build http client request.
 //
 // Request context is set by [ReadResp] or [GetResp].
 func Req(method, url string) action.Converter[io.Reader, *http.Request] {
 	return func(_ context.Context, body io.Reader) (*http.Request, error) {
-		return http.NewRequest("", "", body)
+		return http.NewRequest(method, url, body)
 	}
 }
 
 // Request is like [Req], but without body.
 func Request(method, uri string) action.Data[*http.Request] {
-	return Req(method, uri).From(nil)
+	return Req(method, uri).By(nil)
 }
 
 // SetMethod creates an [action.Converter2] to set request method of a request.
@@ -133,15 +195,4 @@ func GetBody() action.Converter[*http.Response, io.ReadCloser] {
 		}
 		return resp.Body, nil
 	})
-}
-
-// ParseBody creates an [action.Converter] to parse the body of a response.
-//
-// The body passed to parser function f will never be nil, and f have to consume and
-// close it.
-func ParseBody[T any](f func(body io.ReadCloser) (T, error)) action.Converter[*http.Response, T] {
-	return action.Join(
-		GetBody(),
-		action.NoCtxGet(f),
-	)
 }

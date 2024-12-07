@@ -21,7 +21,8 @@ const Addr = ":32100"
 
 func server() task.Task {
 	srv := &http.Server{Addr: Addr}
-	srv.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		size, err := io.Copy(io.Discard, r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -31,6 +32,11 @@ func server() task.Task {
 			"size": size,
 		})
 	})
+	mux.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"size":9}`))
+	})
+	srv.Handler = mux
 
 	return Server(srv)
 }
@@ -40,6 +46,7 @@ type APIResp struct {
 }
 
 func apiResp(_ context.Context, res *http.Response) (ret *APIResp, err error) {
+	// refer example of [DecodeWith] for simpler way to handle response body
 	defer res.Body.Close()
 	defer io.Copy(io.Discard, res.Body)
 	var v APIResp
@@ -58,13 +65,13 @@ func Example() {
 	// this will open and close the file multiple times when retrying (file is
 	// closed by http client). this is simpler and has nearly no impact on
 	// performance comparing to reading and sending large file over network.
-	req := Request(http.MethodPost, "http://127.0.0.1"+Addr).
-		Then(UseBody(action.NoCtxGet(os.Open).By("testdata/super_large_file")))
+	req := Req(http.MethodPost, "http://127.0.0.1"+Addr).
+		From(BodyGenFrom(os.Open).By("testdata/super_large_file"))
 	// this will cache the file, preventing from opening again, so you have to
 	// close it after retrying.
-	// file := action.NoCtxGet(os.Open).By("testdata/super_large_file").Cached()
+	// file := BodyGenFrom(os.Open).By("testdata/super_large_file").Cached()
 	// req := Request(http.MethodPost, "http://127.0.0.1"+Addr).
-	// 	Then(UseBodyReader(file))
+	// 	From(body)
 	resp := action.Get(apiResp).
 		From(GetResp().From(req)).
 		With(task.Timeout(time.Second)).
@@ -79,5 +86,5 @@ func Example() {
 		return
 	}
 	fmt.Println(actual.Size)
-	//output: 7
+	//output: 9
 }
