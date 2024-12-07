@@ -6,6 +6,7 @@ package httptask
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -13,18 +14,18 @@ import (
 	"github.com/raohwork/task/action"
 )
 
-// Req creates an [action.Data] of empty http client request. The context is ignored.
-func Req() action.Data[*http.Request] {
-	return func(_ context.Context) (*http.Request, error) {
-		return http.NewRequest("", "", nil)
+// Req creates an [action.Converter] to build http client request.
+//
+// Request context is set by [ReadResp] or [GetResp].
+func Req(method, url string) action.Converter[io.Reader, *http.Request] {
+	return func(_ context.Context, body io.Reader) (*http.Request, error) {
+		return http.NewRequest("", "", body)
 	}
 }
 
-// Request is like [Req], but with method and url prefilled. The context is ignored.
+// Request is like [Req], but without body.
 func Request(method, uri string) action.Data[*http.Request] {
-	return func(_ context.Context) (*http.Request, error) {
-		return http.NewRequest(method, uri, nil)
-	}
+	return Req(method, uri).From(nil)
 }
 
 // SetMethod creates an [action.Converter2] to set request method of a request.
@@ -79,43 +80,6 @@ func AddCookie() action.Converter2[*http.Cookie, *http.Request, *http.Request] {
 	}
 }
 
-// UseBody is shortcut to SetBody[some_type]().From(body)
-func UseBody[T io.ReadCloser](body action.Data[T]) action.Converter[*http.Request, *http.Request] {
-	return SetBody[T]().From(body)
-}
-
-// ApplyBody is shortcut to SetBody[some_type]().By(body)
-func ApplyBody[T io.ReadCloser](body T) action.Converter[*http.Request, *http.Request] {
-	return SetBody[T]().By(body)
-}
-
-// UseBodyReader is shortcut to SetBodyReader[some_type]().From(body)
-func UseBodyReader[T io.Reader](body action.Data[T]) action.Converter[*http.Request, *http.Request] {
-	return SetBodyReader[T]().From(body)
-}
-
-// ApplyBodyReader is shortcut to SetBodyReader[some_type]().By(body)
-func ApplyBodyReader[T io.Reader](body T) action.Converter[*http.Request, *http.Request] {
-	return SetBodyReader[T]().By(body)
-}
-
-// SetBodyReader creates a converter to set a reader as request body, preventing
-// http client from closing it. Useful when using os.File as body.
-func SetBodyReader[T io.Reader]() action.Converter2[T, *http.Request, *http.Request] {
-	return func(_ context.Context, body T, r *http.Request) (*http.Request, error) {
-		r.Body = io.NopCloser(body)
-		return r, nil
-	}
-}
-
-// SetBody creates a converter to set the `Body` of a request.
-func SetBody[T io.ReadCloser]() action.Converter2[T, *http.Request, *http.Request] {
-	return func(_ context.Context, body T, r *http.Request) (*http.Request, error) {
-		r.Body = body
-		return r, nil
-	}
-}
-
 // SetContentLength creates a converter to update the request. It's suggested to
 // write tour own converter to setup request at once.
 //
@@ -151,10 +115,33 @@ func GetResp() action.Converter[*http.Request, *http.Response] {
 	}
 }
 
-// ReadBody creates an [action.Converter] to read the body of a response.
+// ReadBody creates an [action.Converter] to read the whole body of a response.
 func ReadBody() action.Converter[*http.Response, []byte] {
 	return func(_ context.Context, resp *http.Response) ([]byte, error) {
 		defer resp.Body.Close()
 		return io.ReadAll(resp.Body)
 	}
+}
+
+// GetBody creates an [action.Converter] to get the body of a response.
+//
+// Extracted body is guaranteed to be non-nil.
+func GetBody() action.Converter[*http.Response, io.ReadCloser] {
+	return action.NoCtxGet(func(resp *http.Response) (io.ReadCloser, error) {
+		if resp == nil || resp.Body == nil {
+			return nil, errors.New("GetBody: response body does not exist")
+		}
+		return resp.Body, nil
+	})
+}
+
+// ParseBody creates an [action.Converter] to parse the body of a response.
+//
+// The body passed to parser function f will never be nil, and f have to consume and
+// close it.
+func ParseBody[T any](f func(body io.ReadCloser) (T, error)) action.Converter[*http.Response, T] {
+	return action.Join(
+		GetBody(),
+		action.NoCtxGet(f),
+	)
 }
