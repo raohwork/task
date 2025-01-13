@@ -9,7 +9,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
 
 	"github.com/raohwork/task/action"
 )
@@ -88,27 +87,6 @@ func Req(method, url string) action.Converter[io.Reader, *http.Request] {
 // Request is like [Req], but without body.
 func Request(method, uri string) action.Data[*http.Request] {
 	return Req(method, uri).By(nil)
-}
-
-// SetMethod creates an [action.Converter2] to set request method of a request.
-//
-// Common usage: request = request.Then(SetMethod().By(http.MethodPost))
-func SetMethod() action.Converter2[string, *http.Request, *http.Request] {
-	return func(_ context.Context, v string, r *http.Request) (*http.Request, error) {
-		r.Method = v
-		return r, nil
-	}
-}
-
-// SetURL creates an [action.Converter2] to set url of a request.  It's suggested to
-// write tour own converter to setup request at once.
-//
-// Common usage: request = request.Then(SetURL().By(myurl))
-func SetURL() action.Converter2[*url.URL, *http.Request, *http.Request] {
-	return func(_ context.Context, v *url.URL, r *http.Request) (*http.Request, error) {
-		r.URL = v
-		return r, nil
-	}
 }
 
 // SetHeader creates an [action.Converter2] to set a header to the request. It's
