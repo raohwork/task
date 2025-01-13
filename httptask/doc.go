@@ -4,4 +4,17 @@
 
 // Package httptask provides some helper to wrap http server and some client job
 // into task.
+//
+// For client job, timeout is controled by context. the timeout info should be
+// applied to whole task (send request + get response + read body). For example:
+//
+//	resp := GetResp().
+//		From(Request("GET", "http://example.com")).
+//		RetryN(3).
+//		Cached()
+//	buf, err := ReadBody().
+//		From(resp).
+//		With(task.Timeout(10 * time.Second)).
+//		Defer(Consume(GetBody().From(resp))).
+//		Get(ctx)
 package httptask
