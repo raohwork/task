@@ -58,3 +58,35 @@ func (d Data[T]) RetryN(n int) Data[T] {
 		return
 	}
 }
+
+// RetryIf wraps d to run it repeatly until success or errf returns false.
+//
+// Error passed to errf will never be nil.
+func (d Data[T]) RetryIf(errf func(error) bool) Data[T] {
+	return func(ctx context.Context) (ret T, err error) {
+		for {
+			ret, err = d(ctx)
+			if err == nil || !errf(err) {
+				return
+			}
+		}
+	}
+}
+
+// RetryNIf is like RetryIf, but no more than n times.
+//
+// Error passed to errf will never be nil.
+func (d Data[T]) RetryNIf(n int, errf func(error) bool) Data[T] {
+	if n < 0 {
+		n = 0
+	}
+	return func(ctx context.Context) (ret T, err error) {
+		for x := 0; x <= n; x++ {
+			ret, err = d(ctx)
+			if err == nil || !errf(err) {
+				return
+			}
+		}
+		return
+	}
+}
