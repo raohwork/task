@@ -86,7 +86,7 @@ func (t Task) RetryNIf(errf func(error) bool, n int) Task {
 // RetryIf is like Retry, but retries only if errf returns true.
 //
 // Error passed to errf can never be nil.
-func (t Task) RetryIf(errf func(error) bool, n int) Task {
+func (t Task) RetryIf(errf func(error) bool) Task {
 	return func(ctx context.Context) (err error) {
 		for {
 			err = t.Run(ctx)
